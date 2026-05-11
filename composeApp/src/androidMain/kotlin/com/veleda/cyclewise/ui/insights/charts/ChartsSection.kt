@@ -105,10 +105,17 @@ private fun ChartCard(
                 style = MaterialTheme.typography.titleSmall,
             )
 
+            val lineColors = if (chart is LineChartData) {
+                lineSeriesColors(chart.series.size)
+            } else {
+                emptyList()
+            }
+
             Box(modifier = Modifier.height(CHART_HEIGHT).fillMaxWidth()) {
                 when (chart) {
                     is LineChartData -> VicoLineChart(
                         data = chart,
+                        colors = lineColors,
                         modifier = Modifier.matchParentSize(),
                     )
                     is BarChartData -> VicoBarChart(
@@ -116,6 +123,14 @@ private fun ChartCard(
                         modifier = Modifier.matchParentSize(),
                     )
                 }
+            }
+
+            if (chart is LineChartData && chart.series.size > 1) {
+                ChartLegend(
+                    entries = chart.series.mapIndexed { index, series ->
+                        LegendEntry(label = series.label, color = lineColors[index])
+                    },
+                )
             }
         }
     }

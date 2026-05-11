@@ -169,12 +169,17 @@ class ChartDataGenerator {
             }
             val moodAvg = cycleLogs.mapNotNull { it.entry.moodScore }.average()
             val energyAvg = cycleLogs.mapNotNull { it.entry.energyLevel }.average()
+            val cycleLabel = "Cycle ${index + 1}"
 
             if (!moodAvg.isNaN()) {
-                moodPoints.add(ChartPoint(x = (index + 1).toFloat(), y = moodAvg.toFloat()))
+                moodPoints.add(
+                    ChartPoint(x = (index + 1).toFloat(), y = moodAvg.toFloat(), label = cycleLabel),
+                )
             }
             if (!energyAvg.isNaN()) {
-                energyPoints.add(ChartPoint(x = (index + 1).toFloat(), y = energyAvg.toFloat()))
+                energyPoints.add(
+                    ChartPoint(x = (index + 1).toFloat(), y = energyAvg.toFloat(), label = cycleLabel),
+                )
             }
         }
 

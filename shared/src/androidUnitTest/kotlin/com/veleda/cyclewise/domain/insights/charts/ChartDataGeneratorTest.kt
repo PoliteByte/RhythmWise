@@ -97,6 +97,8 @@ class ChartDataGeneratorTest {
         assertEquals("chart-cycle-length-history", chart.key)
         assertTrue(chart.series.isNotEmpty())
         assertTrue(chart.series[0].points.size >= 3)
+        assertHasAxisLabels(chart)
+        assertLineChartPointsLabeled(chart)
     }
 
     // ── moodAcrossPhases ────────────────────────────────────────────────
@@ -116,6 +118,8 @@ class ChartDataGeneratorTest {
         assertIs<BarChartData>(chart)
         assertEquals("chart-mood-by-phase", chart.key)
         assertEquals(4, chart.bars.size)
+        assertHasAxisLabels(chart)
+        assertBarsHavePhaseLabels(chart)
     }
 
     // ── energyAcrossPhases ──────────────────────────────────────────────
@@ -129,6 +133,8 @@ class ChartDataGeneratorTest {
         assertIs<BarChartData>(chart)
         assertEquals("chart-energy-by-phase", chart.key)
         assertEquals(4, chart.bars.size)
+        assertHasAxisLabels(chart)
+        assertBarsHavePhaseLabels(chart)
     }
 
     // ── flowIntensityByDay ──────────────────────────────────────────────
@@ -148,6 +154,11 @@ class ChartDataGeneratorTest {
         assertIs<BarChartData>(chart)
         assertEquals("chart-flow-intensity-by-day", chart.key)
         assertTrue(chart.bars.isNotEmpty())
+        assertHasAxisLabels(chart)
+        chart.bars.forEach { bar ->
+            assertTrue(bar.label.isNotBlank(), "flow bar should have non-blank label")
+            assertTrue(bar.label.startsWith("Day "), "flow bar label should start with 'Day '")
+        }
     }
 
     // ── cycleComparison ─────────────────────────────────────────────────
@@ -161,6 +172,22 @@ class ChartDataGeneratorTest {
         assertIs<LineChartData>(chart)
         assertEquals("chart-cycle-comparison", chart.key)
         assertTrue(chart.series.isNotEmpty())
+        assertHasAxisLabels(chart)
+        assertLineChartPointsLabeled(chart)
+    }
+
+    @Test
+    fun `cycleComparison WHEN sufficientData THEN pointsHaveCycleLabels`() {
+        val (periods, logs) = buildPeriodsAndLogs()
+        val chart = generator.cycleComparison(periods, logs)
+
+        assertNotNull(chart)
+        assertIs<LineChartData>(chart)
+        val firstSeries = chart.series.first()
+        assertEquals("Cycle 1", firstSeries.points.first().label)
+        firstSeries.points.forEachIndexed { index, point ->
+            assertEquals("Cycle ${index + 1}", point.label)
+        }
     }
 
     @Test
@@ -188,6 +215,8 @@ class ChartDataGeneratorTest {
         assertIs<BarChartData>(chart)
         assertEquals("chart-symptoms-by-phase", chart.key)
         assertEquals(4, chart.bars.size)
+        assertHasAxisLabels(chart)
+        assertBarsHavePhaseLabels(chart)
     }
 
     // ── waterIntakeByPhase ──────────────────────────────────────────────
@@ -208,6 +237,8 @@ class ChartDataGeneratorTest {
         assertIs<BarChartData>(chart)
         assertEquals("chart-water-by-phase", chart.key)
         assertEquals(4, chart.bars.size)
+        assertHasAxisLabels(chart)
+        assertBarsHavePhaseLabels(chart)
     }
 
     // ── generateAll ─────────────────────────────────────────────────────
@@ -225,5 +256,31 @@ class ChartDataGeneratorTest {
     fun `generateAll WHEN insufficientData THEN returnsEmptyList`() {
         val charts = generator.generateAll(emptyList(), emptyList(), emptyList())
         assertTrue(charts.isEmpty())
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────
+
+    private fun assertHasAxisLabels(chart: LineChartData) {
+        assertTrue(chart.xAxisLabel.isNotBlank(), "xAxisLabel should be non-blank")
+        assertTrue(chart.yAxisLabel.isNotBlank(), "yAxisLabel should be non-blank")
+    }
+
+    private fun assertHasAxisLabels(chart: BarChartData) {
+        assertTrue(chart.xAxisLabel.isNotBlank(), "xAxisLabel should be non-blank")
+        assertTrue(chart.yAxisLabel.isNotBlank(), "yAxisLabel should be non-blank")
+    }
+
+    private fun assertLineChartPointsLabeled(chart: LineChartData) {
+        chart.series.forEach { s ->
+            s.points.forEach { p ->
+                assertNotNull(p.label, "point should have a label")
+                assertTrue(p.label!!.isNotBlank(), "point label should be non-blank")
+            }
+        }
+    }
+
+    private fun assertBarsHavePhaseLabels(chart: BarChartData) {
+        val expected = listOf("Menstrual", "Follicular", "Ovulatory", "Luteal")
+        assertEquals(expected, chart.bars.map { it.label })
     }
 }

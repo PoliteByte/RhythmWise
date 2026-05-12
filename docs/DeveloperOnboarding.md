@@ -1933,6 +1933,18 @@ Insight generators in `shared/` are pure Kotlin — they have no access to Andro
 formatting (via `toLocalizedDateString()`) _after_ generation. This keeps generators
 portable to iOS without modification.
 
+### Charts
+
+The Insights tab also renders a horizontal pager of charts beneath the insight
+cards. Chart data is built in `shared/.../insights/charts/ChartDataGenerator.kt`
+(KMP-safe, no Compose dependency) and rendered via Vico 2.1.2 composables in
+`composeApp/ui/insights/charts/`. The `ChartFormatters.kt` and `ChartLegend.kt`
+helpers provide the shared axis formatter, axis title component, tap markers,
+per-series color palette, and the multi-series legend. See the **Vico charts**
+bullet in `CLAUDE.md` (Insights Engine section) for API gotchas — specifically
+around 1-based x indexing, the no-empty-string invariant on
+`CartesianValueFormatter`, and zero-anchored Y axes.
+
 ---
 
 ## 2.9 SettingsScreen and SettingsViewModel
@@ -2527,6 +2539,29 @@ fun NewScreen(viewModel: NewScreenViewModel = koinViewModel()) {
    `category: InsightCategory`)
 3. Add a `when` branch in `InsightCardDispatcher` in `InsightsScreen.kt`
 4. Add the generator to the list in `AppModule.kt`'s `InsightEngine` factory registration
+
+### New Chart on the Insights Tab
+
+1. Add a generator method in `shared/.../insights/charts/ChartDataGenerator.kt`
+   returning `LineChartData?` or `BarChartData?` (return `null` when there's not
+   enough data).
+2. Register the new method in `generateAll(...)` so it shows up in the pager.
+3. Populate `xAxisLabel`, `yAxisLabel`, and a non-blank `label` on every
+   `ChartBar` / `ChartPoint` — these render as axis titles and categorical tick
+   labels.
+4. If the metric has a bounded scale (e.g., 1–5), add a `when` case in
+   `rememberBarRangeProvider` (`VicoBarChart.kt`) or `rememberLineRangeProvider`
+   (`VicoLineChart.kt`) keyed on your new chart's `key`. For data clustered far
+   from zero, use `FitDataYRangeProvider` instead of `CartesianLayerRangeProvider.auto()`
+   (which forces a zero baseline and compresses the data).
+5. For multi-series line charts, the legend renders automatically via
+   `ChartsSection.ChartCard` — colors come from `lineSeriesColors(count)`.
+6. Add assertions to `ChartDataGeneratorTest` using the existing helpers
+   (`assertHasAxisLabels`, `assertBarsHavePhaseLabels`,
+   `assertLineChartPointsLabeled`).
+
+See the **Vico charts** bullet in `CLAUDE.md` for API gotchas (1-based x indexing
+required, formatter must never return `""`, `rememberLine` is a companion-extension).
 
 ### Library Item Edit/Delete Workflow
 

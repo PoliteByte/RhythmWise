@@ -22,7 +22,10 @@
       "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/javap.exe\":*)",
       "WebFetch(domain:guide.vico.patrykandpatrick.com)",
       "WebFetch(domain:docs.github.com)",
-      "Bash(xargs wc:*)"
+      "Bash(xargs wc:*)",
+      "WebFetch(domain:www.uspto.gov)",
+      "WebFetch(domain:idm-tmng.uspto.gov)",
+      "WebFetch(domain:kb.porkbun.com)"
     ]
   }
 }

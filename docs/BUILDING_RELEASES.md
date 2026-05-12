@@ -18,9 +18,30 @@ These are one-time setup items. Once done, skip ahead to [Per-release workflow](
 | Release keystore (`.jks`) | Local disk, **not** in the repo | Generate per `docs/PLAY_STORE_PUBLISHING_GUIDE_ORG.md` §3. Back up to encrypted offline storage. |
 | Signing credentials | `local.properties` (gitignored) | `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`. |
 | `signingConfigs.release` block | `composeApp/build.gradle.kts` | Reads from `local.properties`. See §3 of the Play Store guide for the template. |
+| Git authentication | SSH key on GitHub | Use SSH rather than HTTPS — Windows Credential Manager can cache stale creds that survive repo transfers and silently 403 on push. See [Git auth — SSH setup](#git-auth--ssh-setup) below. |
 | GitHub CLI | Local install | Used for creating releases. Install: `winget install GitHub.cli`, then `gh auth login`. |
 | Play Console access | Browser | Required for the AAB upload. |
 | Android SDK Build Tools | Local install | Provides `apksigner` for signature verification. |
+
+### Git auth — SSH setup
+
+One-time setup. SSH keys do not expire and bypass the Windows credential helper entirely.
+
+```powershell
+ssh-keygen -t ed25519 -C "<your-github-email>"
+Get-Content ~/.ssh/id_ed25519.pub | Set-Clipboard
+```
+
+Add the copied public key at https://github.com/settings/keys → **New SSH key**.
+
+Switch this clone's remote from HTTPS to SSH:
+
+```powershell
+git remote set-url origin git@github.com:PoliteByte/RhythmWise.git
+ssh -T git@github.com
+```
+
+The SSH test should reply `Hi <your-github-username>! You've successfully authenticated...`. On first connection, accept GitHub's host key with `yes`.
 
 ---
 
@@ -259,6 +280,9 @@ R8 stripped a class referenced via reflection. Common culprits: new Room entitie
 
 **`git describe --tags` returns the wrong tag in Step 4.**
 The command returns the most recent tag reachable from `HEAD`. If you tagged a branch other than `main` recently, run `git describe --tags --abbrev=0 main` to scope to `main`.
+
+**`git push` fails with `403 Permission denied to <user>` even though you have admin on the repo.**
+The HTTPS remote is being authenticated through Windows Credential Manager, and the cached credential is stale or has no scope for the current repo owner (this happens after repo transfers between accounts/orgs). Clearing the credential entry usually doesn't help because the credential helper re-prompts and re-caches the same stale identity. Fix permanently by switching to SSH — see [Git auth — SSH setup](#git-auth--ssh-setup) in the Prerequisites section. Do **not** try to fix this by editing the remote URL or `git config user.*` — neither controls authentication.
 
 **`gh release create` fails with "release already exists".**
 A draft or published release with that tag already exists. Either delete the existing release (`gh release delete v1.0.0-beta.3`) and retry, or edit it in place: `gh release upload v1.0.0-beta.3 <apk>#<rename>` to add the asset, and `gh release edit v1.0.0-beta.3 --notes-file docs/RELEASE_NOTES.md` to update the notes.

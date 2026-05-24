@@ -3,6 +3,8 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import androidx.room.gradle.RoomExtension
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -94,11 +96,11 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.veleda.cyclewise"
+        applicationId = "com.politebyte.rhythmwise"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 3
-        versionName = "1.0.0-beta.3"
+        versionCode = 4
+        versionName = "1.0.0"
         testInstrumentationRunner = "com.veleda.cyclewise.CustomTestRunner"
     }
     // This is the standard, safe way to handle duplicate text files
@@ -114,10 +116,27 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val propsFile = rootProject.file("local.properties")
+            if (propsFile.exists()) {
+                val props = Properties().apply { load(FileInputStream(propsFile)) }
+                storeFile = props.getProperty("RELEASE_STORE_FILE")?.let { file(it) }
+                storePassword = props.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = props.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = props.getProperty("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
+            // Sign only when a keystore is configured via local.properties; otherwise
+            // produce an unsigned bundle so CI / unconfigured checkouts can still build.
+            signingConfigs.getByName("release").takeIf { it.storeFile != null }
+                ?.let { signingConfig = it }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -26,6 +26,12 @@ jobs:
       - name: Run composeApp unit tests
         run: ./gradlew :composeApp:testDebugUnitTest
 
+      - name: Run Android Lint
+        run: ./gradlew :composeApp:lintDebug
+
+      - name: Run Detekt
+        run: ./gradlew detekt
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -34,3 +40,5 @@ jobs:
           path: |
             shared/build/reports/tests/
             composeApp/build/reports/tests/
+            composeApp/build/reports/lint-results-debug.html
+            build/reports/detekt/

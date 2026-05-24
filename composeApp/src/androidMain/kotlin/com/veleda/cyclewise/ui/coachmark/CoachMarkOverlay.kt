@@ -324,12 +324,13 @@ fun CoachMarkOverlay(
 
                     if (active.def.skipButtonRes != null) {
                         val context = androidx.compose.ui.platform.LocalContext.current
+                        val skipToastMessage = stringResource(active.def.skipToastRes!!)
                         TextButton(
                             onClick = {
                                 state.skipToKey(active.def.skipTargetKey!!, allDefs)
                                 Toast.makeText(
                                     context,
-                                    context.getString(active.def.skipToastRes!!),
+                                    skipToastMessage,
                                     Toast.LENGTH_LONG,
                                 ).show()
                             },

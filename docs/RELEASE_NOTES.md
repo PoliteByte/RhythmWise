@@ -1,4 +1,4 @@
-## v1.0.0-beta.3
+## v1.0.0
 
 **RhythmWise** is a privacy-first menstrual cycle tracker for Android. All of your data stays on your device — encrypted, offline, and fully under your control.
 
@@ -6,16 +6,19 @@
 
 A comprehensive cycle tracking app built with one guiding principle: **your data belongs to you**. There are no accounts, no cloud sync, no analytics, and no internet connection — ever. Your database is encrypted with AES-256-GCM (SQLCipher) behind a passphrase that only you know.
 
-### What's New in beta.3
+### What's New in 1.0.0
 
-- **Database export and import** — Move your encrypted database between devices with a new backup and restore flow.
-- **Readable insights charts** — Chart axes now show phase names and cycle labels, multi-series charts have a color-coded legend, and tapping a bar or point reveals its exact value.
-- **Contextual help** — New help buttons across the tracker and daily log open short usage tips so features are easier to discover.
-- **Settings reorganized** — The settings page has been restructured and normalized for clearer navigation.
-- **Daily log polish** — A new "Done" button and tab completion tinting make finishing a log entry more obvious. Mood, energy, and libido star ratings can now be deselected by tapping the selected star again.
-- **Calendar refresh** — Day indicators are now distinct shaped icons (instead of dots), and phase legend chips use background fill that matches the calendar.
-- **Custom tag library** — Your custom tags are now first-class library objects that can be renamed and deleted alongside symptoms and medications.
-- **Quieter onboarding** — The wellness empty-state prompt is now a one-time experience and won't reappear after you've dismissed it.
+RhythmWise graduates from beta to its first stable release — the full privacy-first tracker, ready for everyday use.
+
+Highlights since the beta series:
+
+- **Backup and restore** — Move your encrypted database between devices with a new export and import flow.
+- **Readable insights charts** — Chart axes show phase names and cycle labels, multi-series charts have a color-coded legend, and tapping a bar or point reveals its exact value.
+- **Contextual help** — Help buttons across the tracker and daily log open short usage tips so features are easier to discover.
+- **Daily log polish** — A "Done" button and tab completion tinting make finishing an entry clearer; mood, energy, and libido stars can be deselected by tapping the selected star again.
+- **Calendar refresh** — Distinct shaped day indicators (instead of dots) and phase legend chips that match the calendar fill.
+- **Custom tag library** — Custom tags are now first-class library objects you can rename and delete alongside symptoms and medications.
+- **Settings reorganized** — Restructured and normalized for clearer navigation.
 
 ### Features
 
@@ -43,6 +46,6 @@ A comprehensive cycle tracking app built with one guiding principle: **your data
 
 Download the APK below and sideload it on your Android device (Android 8.0+).
 
-> **Note:** This is a beta release. If you encounter bugs or have feedback, please [open an issue](../../issues).
+> **Feedback:** If you encounter bugs or have feedback, please [open an issue](../../issues).
 
 RhythmWise is free, open-source (Apache 2.0), and contains no ads or in-app purchases.

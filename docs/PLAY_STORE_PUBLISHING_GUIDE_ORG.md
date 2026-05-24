@@ -237,20 +237,30 @@ RELEASE_KEY_ALIAS=rhythmwise-upload
 RELEASE_KEY_PASSWORD=your-key-password
 ```
 
-Then add a `signingConfigs` block to `composeApp/build.gradle.kts` inside the
-`android { }` block, before `buildTypes`:
+Add these imports at the top of `composeApp/build.gradle.kts`. The `java.*`
+package **cannot** be referenced inline (e.g. `java.util.Properties`) — in a
+Gradle Kotlin DSL script `java` resolves to the Java plugin extension accessor,
+not the `java.*` package, so the inline form fails to compile:
+
+```kotlin
+import java.io.FileInputStream
+import java.util.Properties
+```
+
+Then add a `signingConfigs` block inside the `android { }` block, before
+`buildTypes`:
 
 ```kotlin
 signingConfigs {
     create("release") {
-        val props = rootProject.file("local.properties")
-            .takeIf { it.exists() }
-            ?.let { java.util.Properties().apply { load(it.inputStream()) } }
-
-        storeFile = props?.getProperty("RELEASE_STORE_FILE")?.let { file(it) }
-        storePassword = props?.getProperty("RELEASE_STORE_PASSWORD")
-        keyAlias = props?.getProperty("RELEASE_KEY_ALIAS")
-        keyPassword = props?.getProperty("RELEASE_KEY_PASSWORD")
+        val propsFile = rootProject.file("local.properties")
+        if (propsFile.exists()) {
+            val props = Properties().apply { load(FileInputStream(propsFile)) }
+            storeFile = props.getProperty("RELEASE_STORE_FILE")?.let { file(it) }
+            storePassword = props.getProperty("RELEASE_STORE_PASSWORD")
+            keyAlias = props.getProperty("RELEASE_KEY_ALIAS")
+            keyPassword = props.getProperty("RELEASE_KEY_PASSWORD")
+        }
     }
 }
 ```

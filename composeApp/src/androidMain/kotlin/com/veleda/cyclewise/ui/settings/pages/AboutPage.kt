@@ -193,6 +193,8 @@ internal fun AboutPage(
         // ── Developer Card (debug only) ──────────────────────────────
         if (BuildConfig.DEBUG) {
             SettingsSectionCard(title = stringResource(R.string.settings_developer_title)) {
+                val seedingMessage = stringResource(R.string.settings_seeding)
+                val seedingCompleteMessage = stringResource(R.string.settings_seeding_complete)
                 Button(
                     enabled = isSessionActive,
                     onClick = {
@@ -201,13 +203,13 @@ internal fun AboutPage(
                             scope.launch {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.settings_seeding),
+                                    seedingMessage,
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 seeder()
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.settings_seeding_complete),
+                                    seedingCompleteMessage,
                                     Toast.LENGTH_LONG
                                 ).show()
                             }

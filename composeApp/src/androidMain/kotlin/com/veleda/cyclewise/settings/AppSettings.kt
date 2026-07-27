@@ -55,12 +55,24 @@ private val THEME_MODE = stringPreferencesKey("theme_mode")
 private val SEED_MANIFEST_JSON = stringPreferencesKey("seed_manifest_json")
 
 /**
+ * [AppSettings.autolockMinutes] sentinel: never auto-lock. The session stays
+ * open until the user taps Lock Now or the process dies; cold starts still
+ * require the passphrase (issue #149).
+ */
+const val AUTOLOCK_NEVER_MINUTES = -1
+
+/** [AppSettings.autolockMinutes] sentinel: lock every time the app returns to the foreground. */
+const val AUTOLOCK_IMMEDIATE_MINUTES = 0
+
+/**
  * DataStore-backed wrapper for user-configurable app preferences.
  *
  * All properties are exposed as cold [Flow]s that emit the current value on subscription.
  * Singleton-scoped (lives for the app process).
  *
  * @property autolockMinutes       Inactivity timeout before auto-lock, in minutes (default: 10).
+ *                                 [AUTOLOCK_NEVER_MINUTES] disables the timeout;
+ *                                 [AUTOLOCK_IMMEDIATE_MINUTES] locks on every foreground.
  * @property topSymptomsCount      Number of top symptoms shown in the recurrence insight (default: 3).
  * @property isPrepopulated        Whether the default symptom library has been seeded on first unlock.
  * @property showMoodInSummary     Whether mood score is displayed in the log summary bottom sheet (default: true).

@@ -212,7 +212,13 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
-    <string name="settings_autolock_title">Auto-lock timeout (minutes)</string>
+    <string name="settings_autolock_title">Auto-lock timeout</string>
+    <string name="settings_autolock_immediately">Immediately</string>
+    <string name="settings_autolock_never">Never</string>
+    <string name="autolock_never_dialog_title">Turn off auto-lock?</string>
+    <string name="autolock_never_dialog_body">Your data will stay unlocked until you tap Lock Now or fully close the app. Anyone who picks up your phone while the app is open will be able to read your data. Opening the app after a full close still requires your passphrase.</string>
+    <string name="autolock_never_dialog_confirm">Turn Off</string>
+    <string name="autolock_never_dialog_cancel">Cancel</string>
     <string name="settings_security_title">Security</string>
     <string name="settings_lock_button">Lock Now</string>
     <string name="settings_locked_message">Currently locked. Unlock the app to access your secured data.</string>

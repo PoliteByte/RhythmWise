@@ -2,6 +2,8 @@ package com.veleda.cyclewise.ui.settings.pages
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,12 +23,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,6 +45,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.settings.AUTOLOCK_IMMEDIATE_MINUTES
+import com.veleda.cyclewise.settings.AUTOLOCK_NEVER_MINUTES
 import com.veleda.cyclewise.ui.backup.BackupErrorDialog
 import com.veleda.cyclewise.ui.backup.BackupMetadataPreviewDialog
 import com.veleda.cyclewise.ui.backup.BackupOverwriteConfirmDialog
@@ -63,7 +65,7 @@ import com.veleda.cyclewise.ui.theme.LocalDimensions
  */
 // Settings page with four section cards and import dialog flow
 @Suppress("LongMethod", "CyclomaticComplexMethod")
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun SecurityPage(
     state: SecuritySettingsState,
@@ -92,23 +94,59 @@ internal fun SecurityPage(
                 modifier = Modifier.padding(horizontal = dims.md)
             )
 
-            val options = listOf(5, 10, 15, 30)
-            SingleChoiceSegmentedButtonRow(
+            // "Never" weakens the security posture, so it asks for confirmation first
+            var showNeverConfirmDialog by remember { mutableStateOf(false) }
+            val minutesUnit = stringResource(R.string.settings_autolock_minutes_unit)
+            val options = listOf(
+                AUTOLOCK_IMMEDIATE_MINUTES to stringResource(R.string.settings_autolock_immediately),
+                5 to "5 $minutesUnit",
+                10 to "10 $minutesUnit",
+                15 to "15 $minutesUnit",
+                30 to "30 $minutesUnit",
+                AUTOLOCK_NEVER_MINUTES to stringResource(R.string.settings_autolock_never),
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(dims.xs),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = dims.md)
             ) {
-                options.forEachIndexed { index, minutes ->
-                    SegmentedButton(
-                        shape = SegmentedButtonDefaults.itemShape(
-                            index = index,
-                            count = options.size
-                        ),
-                        onClick = { onEvent(SettingsEvent.AutolockChanged(minutes)) },
+                options.forEach { (minutes, label) ->
+                    FilterChip(
                         selected = state.autolockMinutes == minutes,
-                        label = { Text("$minutes ${stringResource(R.string.settings_autolock_minutes_unit)}") }
+                        onClick = {
+                            if (minutes == AUTOLOCK_NEVER_MINUTES &&
+                                state.autolockMinutes != AUTOLOCK_NEVER_MINUTES
+                            ) {
+                                showNeverConfirmDialog = true
+                            } else {
+                                onEvent(SettingsEvent.AutolockChanged(minutes))
+                            }
+                        },
+                        label = { Text(label) },
                     )
                 }
+            }
+
+            if (showNeverConfirmDialog) {
+                AlertDialog(
+                    onDismissRequest = { showNeverConfirmDialog = false },
+                    title = { Text(stringResource(R.string.autolock_never_dialog_title)) },
+                    text = { Text(stringResource(R.string.autolock_never_dialog_body)) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showNeverConfirmDialog = false
+                            onEvent(SettingsEvent.AutolockChanged(AUTOLOCK_NEVER_MINUTES))
+                        }) {
+                            Text(stringResource(R.string.autolock_never_dialog_confirm))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showNeverConfirmDialog = false }) {
+                            Text(stringResource(R.string.autolock_never_dialog_cancel))
+                        }
+                    },
+                )
             }
 
             Spacer(Modifier.height(dims.sm))

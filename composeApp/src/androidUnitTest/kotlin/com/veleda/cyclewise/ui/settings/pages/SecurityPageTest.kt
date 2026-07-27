@@ -67,13 +67,14 @@ class SecurityPageTest {
     }
 
     @Test
-    fun autolockOptions_WHEN_rendered_THEN_allFourDisplayed() {
+    fun autolockOptions_WHEN_rendered_THEN_allSixDisplayed() {
         setContent()
-        // SegmentedButton can create multiple text nodes; verify at least one per label
+        composeTestRule.onAllNodesWithText("Immediately", substring = true)[0].assertIsDisplayed()
         composeTestRule.onAllNodesWithText("5 min", substring = true)[0].assertIsDisplayed()
         composeTestRule.onAllNodesWithText("10 min", substring = true)[0].assertIsDisplayed()
         composeTestRule.onAllNodesWithText("15 min", substring = true)[0].assertIsDisplayed()
         composeTestRule.onAllNodesWithText("30 min", substring = true)[0].assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Never", substring = true)[0].assertIsDisplayed()
     }
 
     @Test
@@ -89,6 +90,48 @@ class SecurityPageTest {
         composeTestRule.onAllNodesWithText("5 min", substring = true)[0].performClick()
         val changed = events.filterIsInstance<SettingsEvent.AutolockChanged>()
         assert(changed.any { it.minutes == 5 }) { "Expected AutolockChanged(5), got $events" }
+    }
+
+    @Test
+    fun autolockImmediately_WHEN_tapped_THEN_dispatchesZeroWithoutDialog() {
+        val events = mutableListOf<SettingsEvent>()
+        setContent(onEvent = { events.add(it) })
+        composeTestRule.onAllNodesWithText("Immediately", substring = true)[0].performClick()
+        val changed = events.filterIsInstance<SettingsEvent.AutolockChanged>()
+        assert(changed.any { it.minutes == 0 }) { "Expected AutolockChanged(0), got $events" }
+    }
+
+    @Test
+    fun autolockNever_WHEN_tapped_THEN_showsConfirmDialogWithoutDispatching() {
+        val events = mutableListOf<SettingsEvent>()
+        setContent(onEvent = { events.add(it) })
+        composeTestRule.onAllNodesWithText("Never", substring = true)[0].performClick()
+        composeTestRule.onNodeWithText("Turn off auto-lock?").assertIsDisplayed()
+        assert(events.filterIsInstance<SettingsEvent.AutolockChanged>().isEmpty()) {
+            "Never must not dispatch before confirmation, got $events"
+        }
+    }
+
+    @Test
+    fun autolockNeverDialog_WHEN_confirmed_THEN_dispatchesNeverSentinel() {
+        val events = mutableListOf<SettingsEvent>()
+        setContent(onEvent = { events.add(it) })
+        composeTestRule.onAllNodesWithText("Never", substring = true)[0].performClick()
+        composeTestRule.onNodeWithText("Turn Off").performClick()
+        val changed = events.filterIsInstance<SettingsEvent.AutolockChanged>()
+        assert(changed.any { it.minutes == -1 }) { "Expected AutolockChanged(-1), got $events" }
+    }
+
+    @Test
+    fun autolockNeverDialog_WHEN_cancelled_THEN_noEventAndDialogGone() {
+        val events = mutableListOf<SettingsEvent>()
+        setContent(onEvent = { events.add(it) })
+        composeTestRule.onAllNodesWithText("Never", substring = true)[0].performClick()
+        composeTestRule.onNodeWithText("Cancel").performClick()
+        composeTestRule.onNodeWithText("Turn off auto-lock?").assertDoesNotExist()
+        assert(events.filterIsInstance<SettingsEvent.AutolockChanged>().isEmpty()) {
+            "Cancel must not dispatch, got $events"
+        }
     }
 
     @Test

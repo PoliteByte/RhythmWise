@@ -82,6 +82,66 @@ class CycleViewModelTest {
     private val today = TestData.DATE
     private val pastDate = TestData.DATE.minus(5, DateTimeUnit.DAY)
 
+    // The ViewModel reads the real clock, so future-date tests must be relative
+    // to the actual today (kotlin.time.Clock), not the fixed TestData date.
+    private val realToday = kotlin.time.Clock.System.todayIn(TimeZone.currentSystemDefault())
+    private val tomorrow = realToday.plus(1, DateTimeUnit.DAY)
+
+    @Test
+    fun onEvent_DayTapped_WHEN_dateIsFuture_THEN_ignoresEvent() = runTest {
+        // GIVEN a future date with no log
+        coEvery { mockRepository.getFullLogForDate(tomorrow) } returns null
+
+        // WHEN
+        viewModel.effect.test {
+            viewModel.onEvent(TrackerEvent.DayTapped(tomorrow))
+            advanceUntilIdle()
+
+            // THEN — no navigation effect, no sheet, no log lookup
+            expectNoEvents()
+        }
+        assertNull(viewModel.uiState.value.logForSheet)
+        coVerify(exactly = 0) { mockRepository.getFullLogForDate(tomorrow) }
+    }
+
+    @Test
+    fun onEvent_PeriodMarkDay_WHEN_dateIsFuture_THEN_doesNotLogPeriodDay() = runTest {
+        // WHEN
+        viewModel.onEvent(TrackerEvent.PeriodMarkDay(tomorrow))
+        advanceUntilIdle()
+
+        // THEN
+        coVerify(exactly = 0) { mockRepository.logPeriodDay(any()) }
+        coVerify(exactly = 0) { mockRepository.unLogPeriodDay(any()) }
+    }
+
+    @Test
+    fun onEvent_PeriodRangeDragged_WHEN_rangeEntirelyFuture_THEN_ignoresEvent() = runTest {
+        // WHEN dragging tomorrow through the day after
+        viewModel.onEvent(
+            TrackerEvent.PeriodRangeDragged(tomorrow, tomorrow.plus(1, DateTimeUnit.DAY))
+        )
+        advanceUntilIdle()
+
+        // THEN
+        coVerify(exactly = 0) { mockRepository.logPeriodDay(any()) }
+    }
+
+    @Test
+    fun onEvent_PeriodRangeDragged_WHEN_rangeCrossesToday_THEN_clampsAtToday() = runTest {
+        // GIVEN a drag from two days ago released on tomorrow
+        val start = realToday.minus(2, DateTimeUnit.DAY)
+
+        // WHEN
+        viewModel.onEvent(TrackerEvent.PeriodRangeDragged(start, tomorrow))
+        advanceUntilIdle()
+
+        // THEN — days up to and including today are marked, tomorrow is not
+        coVerify(exactly = 1) { mockRepository.logPeriodDay(start) }
+        coVerify(exactly = 1) { mockRepository.logPeriodDay(realToday) }
+        coVerify(exactly = 0) { mockRepository.logPeriodDay(tomorrow) }
+    }
+
     @Test
     fun onEvent_DayTapped_WHEN_logExists_THEN_showsLogSheet() = runTest {
         // GIVEN

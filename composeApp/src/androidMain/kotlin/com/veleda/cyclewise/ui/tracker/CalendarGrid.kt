@@ -110,6 +110,9 @@ internal fun CalendarGrid(
                     val anchorDate = boundsRegistry.dateAt(rootPos)
                         ?: return@awaitEachGesture
 
+                    // Periods can only be marked up to today (issue #147)
+                    if (anchorDate > today) return@awaitEachGesture
+
                     val longPress = awaitLongPressOrCancellation(down.id)
                     if (longPress == null) {
                         // Cancelled before long-press threshold — let other gestures handle.
@@ -127,8 +130,10 @@ internal fun CalendarGrid(
                         if (dragRootPos != null) {
                             val hoveredDate = boundsRegistry.dateAt(dragRootPos)
                             if (hoveredDate != null) {
-                                lastDragDate = hoveredDate
-                                onDragStateChanged(anchorDate, hoveredDate, true)
+                                // Dragging past today clamps the selection to today (issue #147)
+                                val clampedDate = if (hoveredDate > today) today else hoveredDate
+                                lastDragDate = clampedDate
+                                onDragStateChanged(anchorDate, clampedDate, true)
                             }
                         }
                         change.consume()
@@ -183,7 +188,9 @@ internal fun CalendarGrid(
                 val prevDisplayPhase = prevRaw?.takeIf { phaseVisible[it] != false }
                 val nextDisplayPhase = nextRaw?.takeIf { phaseVisible[it] != false }
 
-                val dayIsNotTappable = day.position != DayPosition.MonthDate
+                // Future days can't open a log or be marked (issue #147)
+                val isFutureDay = date > today
+                val dayIsNotTappable = day.position != DayPosition.MonthDate || isFutureDay
 
                 val handleTap: (() -> Unit)? = if (dayIsNotTappable) null else {
                     { onEvent(TrackerEvent.DayTapped(date)) }
@@ -268,6 +275,7 @@ internal fun CalendarGrid(
                     isHeatmapEnd = isHeatmapEnd,
                     phaseBorderColor = phaseBorderColor,
                     isHeatmapModeActive = isHeatmapActive,
+                    isFuture = isFutureDay,
                 )
             }
         )

@@ -188,6 +188,9 @@ class TrackerViewModel(
             is TrackerEvent.DayTapped -> viewModelScope.launch {
                 val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
                 val date = event.date
+                // Future days have no log to show and must not create one (issue #147);
+                // the UI already blocks this — kept as defense in depth
+                if (date > today) return@launch
                 val periodForDate = _uiState.value.periods.find {
                     date in (it.startDate..(it.endDate ?: today))
                 }
@@ -210,8 +213,11 @@ class TrackerViewModel(
             }
 
             is TrackerEvent.PeriodMarkDay -> viewModelScope.launch {
+                val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                // Period days can only be marked up to today (issue #147)
+                if (event.date > today) return@launch
                 val periodForDate = _uiState.value.periods.find {
-                    event.date in (it.startDate..(it.endDate ?: Clock.System.todayIn(TimeZone.currentSystemDefault())))
+                    event.date in (it.startDate..(it.endDate ?: today))
                 }
                 if (periodForDate != null) {
                     // Check if the period log has user-entered data before unmarking
@@ -236,9 +242,13 @@ class TrackerViewModel(
             }
 
             is TrackerEvent.PeriodRangeDragged -> viewModelScope.launch {
-                val anchor = event.anchorDate
-                val release = event.releaseDate
                 val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                // Clamp the drag to today; ignore ranges that lie entirely in the
+                // future (issue #147). Shrink branches are unaffected: their anchors
+                // are existing period edges, which never lie beyond today.
+                if (minOf(event.anchorDate, event.releaseDate) > today) return@launch
+                val anchor = minOf(event.anchorDate, today)
+                val release = minOf(event.releaseDate, today)
                 val rangeStart = minOf(anchor, release)
                 val rangeEnd = maxOf(anchor, release)
 

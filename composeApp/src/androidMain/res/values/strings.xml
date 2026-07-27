@@ -62,6 +62,7 @@
     <!-- Daily Log Wellness empty state -->
     <string name="daily_log_wellness_empty_prompt">Start by rating your mood or energy, or log your water intake.</string>
     <string name="daily_log_wellness_empty_icon_cd">Get started prompt</string>
+    <string name="tracker_empty_close_cd">Dismiss</string>
 
     <!-- Tracker calendar empty state -->
     <string name="tracker_empty_title">Your Calendar Is Empty</string>

@@ -1,5 +1,6 @@
 package com.veleda.cyclewise.domain.repository
 
+import com.veleda.cyclewise.domain.PeriodStartResult
 import com.veleda.cyclewise.domain.models.CycleSettings
 import com.veleda.cyclewise.domain.models.Period
 import com.veleda.cyclewise.domain.models.PeriodLog
@@ -344,6 +345,23 @@ interface PeriodRepository {
         entryIds: List<String>,
         waterDates: List<LocalDate>,
     )
+
+    /**
+     * Marks [date] as the start of a period with auto-fill (issue #144).
+     *
+     * When the day is an **island** (no adjacent or containing period), a
+     * completed period spanning `date .. date + N-1` is created, where N comes
+     * from [com.veleda.cyclewise.domain.PeriodLengthResolver] (history average →
+     * user setting) and the range is clamped to end before the next existing
+     * period. Auto-filled days may extend into the future — that is the
+     * feature's intent ("assume I'm on my period for N days") and distinct from
+     * manual future-day marking, which stays blocked (issue #147).
+     *
+     * For non-island days the behavior is exactly [logPeriodDay] — the
+     * merge/extend/already-inside scenarios are untouched, keeping drag-editing
+     * semantics intact.
+     */
+    suspend fun logPeriodStart(date: LocalDate): PeriodStartResult
 
     // ── Cycle settings ───────────────────────────────────────────────────
 

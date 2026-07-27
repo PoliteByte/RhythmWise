@@ -237,9 +237,26 @@ class TrackerViewModel(
                         _effect.tryEmit(TrackerEffect.PeriodMarked)
                     }
                 } else {
-                    periodRepository.logPeriodDay(event.date)
-                    _effect.tryEmit(TrackerEffect.PeriodMarked)
+                    // Fresh start: auto-fill the expected duration (issue #144)
+                    val result = periodRepository.logPeriodStart(event.date)
+                    if (result.autoFilled && result.periodId != null) {
+                        _effect.tryEmit(
+                            TrackerEffect.PeriodAutoFilled(
+                                periodId = result.periodId!!,
+                                startDate = result.filledStart,
+                                endDate = result.filledEnd,
+                            )
+                        )
+                    } else {
+                        _effect.tryEmit(TrackerEffect.PeriodMarked)
+                    }
                 }
+            }
+
+            is TrackerEvent.UndoAutoFill -> viewModelScope.launch {
+                // Shrink back to the tapped day — the user's explicit intent —
+                // rather than deleting the period outright
+                periodRepository.updatePeriodEndDate(event.periodId, event.startDate)
             }
 
             is TrackerEvent.PeriodRangeDragged -> viewModelScope.launch {
@@ -347,6 +364,7 @@ class TrackerViewModel(
             is TrackerEvent.ScreenEntered -> currentState
             is TrackerEvent.DayTapped -> currentState
             is TrackerEvent.PeriodMarkDay -> currentState
+            is TrackerEvent.UndoAutoFill -> currentState
             is TrackerEvent.PeriodRangeDragged -> currentState
             is TrackerEvent.DismissLogSheet -> {
                 currentState.copy(logForSheet = null, periodIdForSheet = null, waterCupsForSheet = null)

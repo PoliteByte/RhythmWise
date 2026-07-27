@@ -15,6 +15,9 @@ sealed interface TrackerEvent {
     /** The user long-pressed a day to mark or unmark it as a period day. */
     data class PeriodMarkDay(val date: LocalDate) : TrackerEvent
 
+    /** Undo an auto-filled period start: shrink the period back to its single start day (issue #144). */
+    data class UndoAutoFill(val periodId: String, val startDate: LocalDate) : TrackerEvent
+
     /** The user long-pressed [anchorDate] and dragged to [releaseDate], requesting a period range operation. */
     data class PeriodRangeDragged(val anchorDate: LocalDate, val releaseDate: LocalDate) : TrackerEvent
 
@@ -65,4 +68,15 @@ sealed interface TrackerEffect {
 
     /** A period day was marked or unmarked, triggering a success animation. */
     data object PeriodMarked : TrackerEffect
+
+    /**
+     * A new period start was auto-filled to a multi-day range (issue #144).
+     * The UI shows an undo snackbar; undo shrinks the period back to its
+     * single tapped start day.
+     */
+    data class PeriodAutoFilled(
+        val periodId: String,
+        val startDate: LocalDate,
+        val endDate: LocalDate,
+    ) : TrackerEffect
 }

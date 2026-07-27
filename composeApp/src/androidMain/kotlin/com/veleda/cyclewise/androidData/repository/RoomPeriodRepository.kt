@@ -11,6 +11,8 @@ import com.veleda.cyclewise.androidData.local.dao.MedicationLogDao
 import com.veleda.cyclewise.androidData.local.dao.PeriodLogDao
 import com.veleda.cyclewise.androidData.local.dao.SymptomDao
 import com.veleda.cyclewise.androidData.local.dao.SymptomLogDao
+import com.veleda.cyclewise.domain.PeriodLengthResolver
+import com.veleda.cyclewise.domain.PeriodStartResult
 import com.veleda.cyclewise.androidData.local.dao.UserCycleSettingsDao
 import com.veleda.cyclewise.androidData.local.dao.WaterIntakeDao
 import com.veleda.cyclewise.androidData.local.entities.UserCycleSettingsEntity
@@ -816,18 +818,71 @@ class RoomPeriodRepository(
             }
 
             // Ensure a PeriodLog exists for this date across all scenarios.
-            val entry = dailyEntryDao.getEntryForDate(date).firstOrNull()?.toDomain()
-            if (entry != null) {
-                val existingLog = periodLogDao.getLogForEntry(entry.id).firstOrNull()
-                if (existingLog == null) {
-                    periodLogDao.insert(PeriodLog(
-                        id = uuid4().toString(),
-                        entryId = entry.id,
-                        createdAt = Clock.System.now(),
-                        updatedAt = Clock.System.now()
-                    ).toEntity())
-                }
+            ensurePeriodLogForDate(date)
+        }
+    }
+
+    /** Creates an empty [PeriodLog] for [date]'s entry when one doesn't exist yet. */
+    private suspend fun ensurePeriodLogForDate(date: LocalDate) {
+        val entry = dailyEntryDao.getEntryForDate(date).firstOrNull()?.toDomain() ?: return
+        val existingLog = periodLogDao.getLogForEntry(entry.id).firstOrNull()
+        if (existingLog == null) {
+            periodLogDao.insert(PeriodLog(
+                id = uuid4().toString(),
+                entryId = entry.id,
+                createdAt = Clock.System.now(),
+                updatedAt = Clock.System.now()
+            ).toEntity())
+        }
+    }
+
+    /**
+     * Marks [date] as a period start with auto-fill (issue #144).
+     *
+     * Island days create `date .. date + N-1` in one transaction, where N is
+     * resolved by [PeriodLengthResolver] and the range is clamped to end the day
+     * before the next existing period. Non-island days delegate to
+     * [logPeriodDay] unchanged, so drag-editing and merge semantics are
+     * byte-identical to before.
+     *
+     * @see PeriodRepository.logPeriodStart
+     */
+    override suspend fun logPeriodStart(date: LocalDate): PeriodStartResult {
+        return db.withTransaction {
+            val periodBefore = getPeriodForDate(date.minus(1, DateTimeUnit.DAY))
+            val periodAfter = getPeriodForDate(date.plus(1, DateTimeUnit.DAY))
+            val periodContaining = getPeriodForDate(date)
+
+            if (periodContaining != null || periodBefore != null || periodAfter != null) {
+                // Not a fresh start — reuse the single-day state machine
+                logPeriodDay(date)
+                return@withTransaction PeriodStartResult(
+                    autoFilled = false,
+                    periodId = null,
+                    filledStart = date,
+                    filledEnd = date,
+                )
             }
+
+            val allPeriods = getAllPeriods().first()
+            val settings = userCycleSettingsDao.get()?.toDomain() ?: CycleSettings()
+            val fillLength = PeriodLengthResolver.resolve(allPeriods, settings.defaultPeriodLengthDays)
+
+            // Clamp: never touch the next existing period (adjacency is fine)
+            val nextPeriodStart = allPeriods.map { it.startDate }.filter { it > date }.minOrNull()
+            val cap = nextPeriodStart?.minus(1, DateTimeUnit.DAY)
+            var fillEnd = date.plus(fillLength - 1, DateTimeUnit.DAY)
+            if (cap != null && fillEnd > cap) fillEnd = cap
+
+            val created = createCompletedPeriod(date, fillEnd)
+            ensurePeriodLogForDate(date)
+
+            PeriodStartResult(
+                autoFilled = fillEnd > date,
+                periodId = created.id,
+                filledStart = date,
+                filledEnd = fillEnd,
+            )
         }
     }
 

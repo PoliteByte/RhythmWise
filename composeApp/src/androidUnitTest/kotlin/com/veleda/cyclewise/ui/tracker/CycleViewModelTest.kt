@@ -2,6 +2,7 @@ package com.veleda.cyclewise.ui.tracker
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import app.cash.turbine.test
+import com.veleda.cyclewise.domain.PeriodStartResult
 import com.veleda.cyclewise.domain.models.*
 import com.veleda.cyclewise.domain.models.ArticleCategory
 import com.veleda.cyclewise.domain.models.EducationalArticle
@@ -68,6 +69,15 @@ class CycleViewModelTest {
 
         every { mockRepository.observeDayDetails() } returns flowOf(emptyMap())
         every { mockRepository.getAllPeriods() } returns flowOf(emptyList())
+        every { mockRepository.observeCycleSettings() } returns flowOf(CycleSettings())
+        coEvery { mockRepository.logPeriodStart(any()) } answers {
+            PeriodStartResult(
+                autoFilled = false,
+                periodId = null,
+                filledStart = firstArg(),
+                filledEnd = firstArg(),
+            )
+        }
         every { mockSymptomProvider.symptoms } returns flowOf(emptyList())
         every { mockMedicationProvider.medications } returns flowOf(emptyList())
 

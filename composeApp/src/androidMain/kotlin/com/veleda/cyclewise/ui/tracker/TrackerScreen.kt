@@ -25,6 +25,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.datetime.daysUntil
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -246,6 +252,8 @@ fun TrackerScreen(navController: NavController) {
     }
 
     var showSuccess by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     var emptyOverlayDismissed by remember { mutableStateOf(false) }
     var showTrackerHelp by remember { mutableStateOf(false) }
 
@@ -269,6 +277,21 @@ fun TrackerScreen(navController: NavController) {
                 }
                 is TrackerEffect.PeriodMarked -> {
                     showSuccess = true
+                }
+                is TrackerEffect.PeriodAutoFilled -> {
+                    showSuccess = true
+                    // Undo snackbar for the auto-filled range (issue #144)
+                    val filledDays = effect.startDate.daysUntil(effect.endDate) + 1
+                    val result = snackbarHostState.showSnackbar(
+                        message = context.getString(R.string.period_autofill_snackbar, filledDays),
+                        actionLabel = context.getString(R.string.period_autofill_undo),
+                        duration = SnackbarDuration.Long,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.onEvent(
+                            TrackerEvent.UndoAutoFill(effect.periodId, effect.startDate)
+                        )
+                    }
                 }
             }
         }
@@ -334,7 +357,10 @@ fun TrackerScreen(navController: NavController) {
         )
     }
 
-    Scaffold(contentWindowInsets = WindowInsets.statusBars) { padding ->
+    Scaffold(
+        contentWindowInsets = WindowInsets.statusBars,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
         ContentContainer(maxWidth = dims.gridMaxWidth) {
         Column(

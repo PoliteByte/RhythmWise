@@ -324,7 +324,9 @@ class DailyLogViewModel(
             is DailyLogEvent.PeriodToggled -> {
                 if (event.isOnPeriod) {
                     viewModelScope.launch {
-                        periodRepository.logPeriodDay(entryDate)
+                        // Auto-fills the expected duration on a fresh start (issue #144);
+                        // behaves exactly like logPeriodDay for non-island days
+                        periodRepository.logPeriodStart(entryDate)
                         _uiState.update { it.copy(isPeriodDay = true) }
                     }
                     autoSave()

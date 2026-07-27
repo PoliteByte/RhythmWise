@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.size
@@ -399,9 +400,11 @@ private fun MoodFaceValue(score: Int) {
 }
 
 /**
- * Five-step icon scale: the first [score] positions render [filledIcon] in the
- * primary color, the remainder render [emptyIcon] muted. The row carries a
- * "N of 5" content description so screen readers announce the value once.
+ * Five-step icon scale matching the wellness input selectors' single-highlight
+ * model (Daniel's review: no fill-up anywhere): only the position equal to
+ * [score] renders [filledIcon] in the primary color at full opacity; the rest
+ * render [emptyIcon] faded. The row carries a "N of 5" content description so
+ * screen readers announce the value once.
  */
 @Composable
 private fun IconScale(
@@ -418,16 +421,22 @@ private fun IconScale(
         },
     ) {
         repeat(5) { index ->
+            val isSelected = index + 1 == score
             Icon(
-                imageVector = if (index < score) filledIcon else emptyIcon,
+                imageVector = if (isSelected) filledIcon else emptyIcon,
                 contentDescription = null,
-                tint = if (index < score) {
+                tint = if (isSelected) {
                     MaterialTheme.colorScheme.primary
                 } else {
-                    MaterialTheme.colorScheme.outlineVariant
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 },
-                modifier = Modifier.size(dims.lg),
+                modifier = Modifier
+                    .size(dims.lg)
+                    .alpha(if (isSelected) 1f else UNSELECTED_SCALE_ALPHA),
             )
         }
     }
 }
+
+/** Alpha for non-selected positions in [IconScale] — mirrors the input selectors. */
+private const val UNSELECTED_SCALE_ALPHA = 0.35f

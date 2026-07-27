@@ -6,6 +6,7 @@ import com.veleda.cyclewise.androidData.local.database.PeriodDatabase
 import com.veleda.cyclewise.androidData.local.database.RekeyVerificationFailedException
 import com.veleda.cyclewise.androidData.local.draft.LockedWaterDraft
 import com.veleda.cyclewise.di.SESSION_SCOPE
+import com.veleda.cyclewise.domain.models.CycleSettings
 import com.veleda.cyclewise.domain.repository.PeriodRepository
 import com.veleda.cyclewise.domain.services.PassphraseService
 import com.veleda.cyclewise.settings.AppSettings
@@ -129,6 +130,35 @@ class SessionManager(
             ?.get<PeriodDatabase>()
             ?.openHelper
             ?.writableDatabase
+    }
+
+    // ── Cycle settings broker (issue #143) ──────────────────────────────
+    //
+    // Cycle settings live in the ENCRYPTED database, but the surfaces that edit
+    // them (onboarding, the singleton-scoped SettingsViewModel) are not
+    // session-scoped. As the app's only KoinComponent, SessionManager brokers
+    // one-shot reads/writes against the active session; all methods are no-ops
+    // (or return null) while locked.
+
+    /** Snapshot of the user's cycle settings, or null when no session is active. */
+    suspend fun getCycleSettings(): CycleSettings? =
+        getKoin().getScopeOrNull("session")
+            ?.get<PeriodRepository>()
+            ?.observeCycleSettings()
+            ?.first()
+
+    /** Persists the typical cycle length (null clears it). No-op while locked. */
+    suspend fun setTypicalCycleLengthDays(days: Int?) {
+        getKoin().getScopeOrNull("session")
+            ?.get<PeriodRepository>()
+            ?.setTypicalCycleLengthDays(days)
+    }
+
+    /** Persists the auto-fill period length (issue #144). No-op while locked. */
+    suspend fun setDefaultPeriodLengthDays(days: Int) {
+        getKoin().getScopeOrNull("session")
+            ?.get<PeriodRepository>()
+            ?.setDefaultPeriodLengthDays(days)
     }
 
     /**

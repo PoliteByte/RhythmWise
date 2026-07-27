@@ -20,6 +20,9 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import com.veleda.cyclewise.domain.CycleLengthResolver
+import com.veleda.cyclewise.domain.models.CycleSettings
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -165,6 +168,82 @@ internal fun AppearancePage(
                 steps = 3,
                 modifier = Modifier.padding(horizontal = dims.md)
             )
+        }
+
+        // ── Cycle Card (issue #143 — values live in the encrypted DB) ──
+        SettingsSectionCard(title = stringResource(R.string.settings_section_cycle)) {
+            val cycle = state.cycleSettings
+            if (cycle == null) {
+                Text(
+                    stringResource(R.string.settings_cycle_locked),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = dims.md),
+                )
+            } else {
+                Text(
+                    text = if (cycle.typicalCycleLengthDays != null) {
+                        stringResource(
+                            R.string.settings_typical_cycle_length,
+                            cycle.typicalCycleLengthDays ?: 0,
+                        )
+                    } else {
+                        stringResource(R.string.settings_typical_cycle_length_unset)
+                    },
+                    modifier = Modifier.padding(horizontal = dims.md),
+                )
+                Slider(
+                    value = (cycle.typicalCycleLengthDays
+                        ?: CycleLengthResolver.DEFAULT_CYCLE_LENGTH_DAYS).toFloat(),
+                    onValueChange = {
+                        onEvent(SettingsEvent.TypicalCycleLengthChanged(it.roundToInt()))
+                    },
+                    valueRange = CycleSettings.MIN_CYCLE_LENGTH_DAYS.toFloat()..
+                        CycleSettings.MAX_CYCLE_LENGTH_DAYS.toFloat(),
+                    steps = CycleSettings.MAX_CYCLE_LENGTH_DAYS -
+                        CycleSettings.MIN_CYCLE_LENGTH_DAYS - 1,
+                    modifier = Modifier.padding(horizontal = dims.md),
+                )
+                Text(
+                    stringResource(R.string.settings_typical_cycle_length_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = dims.md),
+                )
+
+                Spacer(Modifier.height(dims.md))
+
+                Text(
+                    stringResource(
+                        R.string.settings_default_period_length,
+                        cycle.defaultPeriodLengthDays,
+                    ),
+                    modifier = Modifier.padding(horizontal = dims.md),
+                )
+                Slider(
+                    value = cycle.defaultPeriodLengthDays.toFloat(),
+                    onValueChange = {
+                        onEvent(SettingsEvent.DefaultPeriodLengthChanged(it.roundToInt()))
+                    },
+                    valueRange = CycleSettings.MIN_PERIOD_LENGTH_DAYS.toFloat()..
+                        CycleSettings.MAX_PERIOD_LENGTH_DAYS.toFloat(),
+                    steps = CycleSettings.MAX_PERIOD_LENGTH_DAYS -
+                        CycleSettings.MIN_PERIOD_LENGTH_DAYS - 1,
+                    modifier = Modifier.padding(horizontal = dims.md),
+                )
+                Text(
+                    stringResource(R.string.settings_default_period_length_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = dims.md),
+                )
+            }
+        }
+
+        // Load the cycle snapshot whenever this page composes (session may have
+        // opened/closed since the last visit)
+        LaunchedEffect(Unit) {
+            onEvent(SettingsEvent.CycleSettingsRequested)
         }
 
         Spacer(Modifier.height(dims.xl))

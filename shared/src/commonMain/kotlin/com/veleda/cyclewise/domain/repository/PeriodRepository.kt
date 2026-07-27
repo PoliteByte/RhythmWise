@@ -1,5 +1,6 @@
 package com.veleda.cyclewise.domain.repository
 
+import com.veleda.cyclewise.domain.models.CycleSettings
 import com.veleda.cyclewise.domain.models.Period
 import com.veleda.cyclewise.domain.models.PeriodLog
 import com.veleda.cyclewise.domain.models.DayDetails
@@ -343,6 +344,24 @@ interface PeriodRepository {
         entryIds: List<String>,
         waterDates: List<LocalDate>,
     )
+
+    // ── Cycle settings ───────────────────────────────────────────────────
+
+    /**
+     * Emits the user's cycle configuration (issue #143). When nothing has been
+     * configured yet, emits [CycleSettings] defaults (no typical length,
+     * 5-day default period length).
+     */
+    fun observeCycleSettings(): Flow<CycleSettings>
+
+    /**
+     * Persists the self-reported typical cycle length, or clears it with null.
+     * Used as the prediction/phase fallback until enough history exists.
+     */
+    suspend fun setTypicalCycleLengthDays(days: Int?)
+
+    /** Persists the auto-fill period length used when a new period starts (issue #144). */
+    suspend fun setDefaultPeriodLengthDays(days: Int)
 
     // ── Debug ────────────────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@ package com.veleda.cyclewise.ui.tracker
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.veleda.cyclewise.domain.CycleLengthResolver
 import com.veleda.cyclewise.domain.models.CustomTag
 import com.veleda.cyclewise.domain.models.DayHeatmapData
 import com.veleda.cyclewise.domain.models.EducationalArticle
@@ -433,22 +434,20 @@ class TrackerViewModel(
      * so the [PeriodPredictionWorker][com.veleda.cyclewise.reminders.workers.PeriodPredictionWorker]
      * can access it without unlocking the encrypted database.
      *
-     * Uses the same average-cycle-length algorithm as [InsightEngine]: computes the mean
-     * cycle length from completed periods and projects from the latest period's start date.
-     * Requires at least 2 completed periods. Clears the cache when insufficient data exists.
+     * Uses [CycleLengthResolver] — the same precedence as the Insights prediction
+     * card (derived average → user typical → 28-day default, issue #143) — so the
+     * notification and the card can never disagree. A prediction is cached from
+     * the first logged period; the cache is cleared only when no periods exist.
      */
     private suspend fun updatePredictionCache(periods: List<Period>) {
-        val completed = periods.filter { it.endDate != null }.sortedBy { it.startDate }
-        if (completed.size < 2) {
+        val latest = periods.maxByOrNull { it.startDate }
+        if (latest == null) {
             appSettings.setCachedPredictedPeriodDate("")
             return
         }
-        val cycleLengths = completed.zipWithNext { current, next ->
-            current.startDate.daysUntil(next.startDate).toDouble()
-        }
-        val avgDays = cycleLengths.average().roundToInt()
-        val latest = periods.maxBy { it.startDate }
-        val predicted = latest.startDate.plus(avgDays, DateTimeUnit.DAY)
+        val typical = periodRepository.observeCycleSettings().first().typicalCycleLengthDays
+        val resolved = CycleLengthResolver.resolve(periods, typical)
+        val predicted = latest.startDate.plus(resolved.days.roundToInt(), DateTimeUnit.DAY)
         appSettings.setCachedPredictedPeriodDate(predicted.toString())
     }
 

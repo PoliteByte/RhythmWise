@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.veleda.cyclewise.domain.models.BackupMetadata
+import com.veleda.cyclewise.domain.models.CycleSettings
 import com.veleda.cyclewise.domain.models.EducationalArticle
 import com.veleda.cyclewise.domain.providers.EducationalContentProvider
 import com.veleda.cyclewise.domain.usecases.DeleteAllDataUseCase
@@ -132,6 +133,13 @@ data class AppearanceSettingsState(
     val showOvulation: Boolean = true,
     val showLuteal: Boolean = true,
     val topSymptomsCount: Int = 3,
+    /**
+     * Cycle configuration snapshot from the encrypted database (issue #143), or
+     * null while the app is locked / the snapshot hasn't loaded. Loaded on
+     * demand via [SettingsEvent.CycleSettingsRequested] rather than collected —
+     * session-scoped flows must not outlive the session in this singleton VM.
+     */
+    val cycleSettings: CycleSettings? = null,
 )
 
 /**
@@ -458,8 +466,13 @@ class SettingsViewModel(
             is SettingsEvent.ShowFollicularToggled,
             is SettingsEvent.ShowOvulationToggled,
             is SettingsEvent.ShowLutealToggled,
-            is SettingsEvent.TopSymptomsCountChanged ->
+            is SettingsEvent.TopSymptomsCountChanged,
+            is SettingsEvent.TypicalCycleLengthChanged,
+            is SettingsEvent.DefaultPeriodLengthChanged ->
                 _appearanceState.update { reduceAppearance(it, event) }
+
+            // Cycle snapshot load is async-only — no synchronous reduce
+            is SettingsEvent.CycleSettingsRequested -> Unit
 
             // ── Colors state events ──────────────────────────────────
             is SettingsEvent.MenstruationColorChanged,
@@ -560,6 +573,19 @@ class SettingsViewModel(
 
             is SettingsEvent.ShowLutealToggled ->
                 viewModelScope.launch { appSettings.setShowLutealPhase(event.enabled) }
+
+            // ── Cycle settings (encrypted DB via SessionManager, issue #143) ──
+            is SettingsEvent.CycleSettingsRequested ->
+                viewModelScope.launch {
+                    val snapshot = sessionManager.getCycleSettings()
+                    _appearanceState.update { it.copy(cycleSettings = snapshot) }
+                }
+
+            is SettingsEvent.TypicalCycleLengthChanged ->
+                viewModelScope.launch { sessionManager.setTypicalCycleLengthDays(event.days) }
+
+            is SettingsEvent.DefaultPeriodLengthChanged ->
+                viewModelScope.launch { sessionManager.setDefaultPeriodLengthDays(event.days) }
 
             is SettingsEvent.MenstruationColorChanged ->
                 viewModelScope.launch { appSettings.setMenstruationColor(event.hex) }
@@ -838,6 +864,17 @@ class SettingsViewModel(
         return when (event) {
             is SettingsEvent.ThemeModeChanged ->
                 state.copy(themeMode = event.mode)
+
+            // Optimistic updates; ignored while locked (cycleSettings == null)
+            is SettingsEvent.TypicalCycleLengthChanged ->
+                state.copy(
+                    cycleSettings = state.cycleSettings?.copy(typicalCycleLengthDays = event.days)
+                )
+
+            is SettingsEvent.DefaultPeriodLengthChanged ->
+                state.copy(
+                    cycleSettings = state.cycleSettings?.copy(defaultPeriodLengthDays = event.days)
+                )
 
             is SettingsEvent.ShowMoodToggled ->
                 state.copy(showMood = event.enabled)

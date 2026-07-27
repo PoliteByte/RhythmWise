@@ -11,7 +11,10 @@ import com.veleda.cyclewise.androidData.local.dao.MedicationLogDao
 import com.veleda.cyclewise.androidData.local.dao.PeriodLogDao
 import com.veleda.cyclewise.androidData.local.dao.SymptomDao
 import com.veleda.cyclewise.androidData.local.dao.SymptomLogDao
+import com.veleda.cyclewise.androidData.local.dao.UserCycleSettingsDao
 import com.veleda.cyclewise.androidData.local.dao.WaterIntakeDao
+import com.veleda.cyclewise.androidData.local.entities.UserCycleSettingsEntity
+import com.veleda.cyclewise.domain.models.CycleSettings
 import com.veleda.cyclewise.androidData.local.database.PeriodDatabase
 import com.veleda.cyclewise.androidData.local.entities.toDomain
 import com.veleda.cyclewise.androidData.local.entities.toEntity
@@ -81,7 +84,30 @@ class RoomPeriodRepository(
     private val waterIntakeDao: WaterIntakeDao,
     private val customTagDao: CustomTagDao,
     private val customTagLogDao: CustomTagLogDao,
+    private val userCycleSettingsDao: UserCycleSettingsDao,
 ) : PeriodRepository {
+
+    /** @see PeriodRepository.observeCycleSettings */
+    override fun observeCycleSettings(): Flow<CycleSettings> =
+        userCycleSettingsDao.observe().map { entity ->
+            entity?.toDomain() ?: CycleSettings()
+        }
+
+    /** @see PeriodRepository.setTypicalCycleLengthDays */
+    override suspend fun setTypicalCycleLengthDays(days: Int?) {
+        val current = userCycleSettingsDao.get()?.toDomain() ?: CycleSettings()
+        userCycleSettingsDao.upsert(
+            UserCycleSettingsEntity.fromDomain(current.copy(typicalCycleLengthDays = days))
+        )
+    }
+
+    /** @see PeriodRepository.setDefaultPeriodLengthDays */
+    override suspend fun setDefaultPeriodLengthDays(days: Int) {
+        val current = userCycleSettingsDao.get()?.toDomain() ?: CycleSettings()
+        userCycleSettingsDao.upsert(
+            UserCycleSettingsEntity.fromDomain(current.copy(defaultPeriodLengthDays = days))
+        )
+    }
     /** @see PeriodRepository.getAllPeriods */
     override fun getAllPeriods(): Flow<List<Period>> {
         return periodDao.getAllPeriods().map { entityList ->

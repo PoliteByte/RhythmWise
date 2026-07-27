@@ -256,6 +256,13 @@
     <string name="settings_section_calendar_display">Calendar Display</string>
     <string name="settings_section_app_info">App Info</string>
     <string name="settings_section_utilities">Utilities</string>
+    <string name="settings_section_cycle">Cycle</string>
+    <string name="settings_cycle_locked">Unlock the app to edit your cycle settings.</string>
+    <string name="settings_typical_cycle_length">Typical cycle length: %1$d days</string>
+    <string name="settings_typical_cycle_length_unset">Typical cycle length: not set</string>
+    <string name="settings_typical_cycle_length_description">Used for predictions and phase coloring until enough cycles are logged. Your logged history takes over automatically.</string>
+    <string name="settings_default_period_length">Default period length: %1$d days</string>
+    <string name="settings_default_period_length_description">How many days are marked automatically when you log a new period start. Drag on the calendar to adjust any period afterwards.</string>
     <string name="settings_section_phase_colors">Phase Colors</string>
     <string name="settings_autolock_description">Locks the app automatically after a period of inactivity.</string>
     <string name="settings_autolock_minutes_unit">min</string>
@@ -286,6 +293,11 @@
     <string name="passphrase_water_toggle">Quick log water</string>
 
     <!-- Setup / Onboarding -->
+    <string name="setup_cycle_length_title">What\'s Your Typical Cycle Length?</string>
+    <string name="setup_cycle_length_body">Count from the first day of one period to the first day of the next. If you\'re not sure, skip this — RhythmWise will learn your rhythm as you log, and you can set or change this any time in Settings.</string>
+    <string name="setup_cycle_length_days">%1$d days</string>
+    <string name="setup_cycle_length_unset">Not set — predictions start from a 28-day cycle until you log a few periods.</string>
+    <string name="setup_cycle_length_skip">Skip for now</string>
     <string name="setup_page1_title">Your Data Stays on This Device</string>
     <string name="setup_page1_body">RhythmWise stores everything you track right here on your phone. Your cycle data, symptoms, moods, and notes never leave this device. There is no account, no cloud sync, and no way for anyone (including us) to see your information.\n\nTo keep your data safe, the app encrypts it with a passphrase that only you know. Think of it as a lock on a private journal. Without the right passphrase, the data is unreadable.</string>
     <string name="setup_page2_title">Choosing a Passphrase You Will Remember</string>

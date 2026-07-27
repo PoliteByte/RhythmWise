@@ -17,6 +17,7 @@
 -keep class com.veleda.cyclewise.androidData.local.entities.WaterIntakeEntity { *; }
 -keep class com.veleda.cyclewise.androidData.local.entities.CustomTagEntity { *; }
 -keep class com.veleda.cyclewise.androidData.local.entities.CustomTagLogEntity { *; }
+-keep class com.veleda.cyclewise.androidData.local.entities.UserCycleSettingsEntity { *; }
 
 # ----------------------------------------------------------------------------
 # Room — DAOs
@@ -32,6 +33,7 @@
 -keep interface com.veleda.cyclewise.androidData.local.dao.WaterIntakeDao { *; }
 -keep interface com.veleda.cyclewise.androidData.local.dao.CustomTagDao { *; }
 -keep interface com.veleda.cyclewise.androidData.local.dao.CustomTagLogDao { *; }
+-keep interface com.veleda.cyclewise.androidData.local.dao.UserCycleSettingsDao { *; }
 
 # ----------------------------------------------------------------------------
 # Room — Database

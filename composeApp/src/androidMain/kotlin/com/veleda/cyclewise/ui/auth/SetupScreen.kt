@@ -27,6 +27,7 @@ import androidx.annotation.RawRes
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,24 +51,28 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.domain.CycleLengthResolver
+import com.veleda.cyclewise.domain.models.CycleSettings
 import com.veleda.cyclewise.ui.components.ContentContainer
 import com.veleda.cyclewise.ui.components.LottieAnimationBox
 import com.veleda.cyclewise.ui.components.MarkdownText
 import com.veleda.cyclewise.ui.components.MedicalDisclaimer
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /** Total number of pages in the onboarding pager. */
-private const val SETUP_PAGE_COUNT = 4
+private const val SETUP_PAGE_COUNT = 5
 
 /**
  * First-time onboarding screen shown when [PassphraseUiState.isFirstTime] is `true`.
  *
- * Contains a [HorizontalPager] with 4 pages:
+ * Contains a [HorizontalPager] with 5 pages:
  * 1. Privacy explanation ("Your Data Stays on This Device")
  * 2. Passphrase guidance ("Choosing a Passphrase You Will Remember")
  * 3. No-recovery warning ("No Recovery, No Exceptions")
- * 4. Passphrase creation form with validation
+ * 4. Typical cycle length question — optional, skippable (issue #143)
+ * 5. Passphrase creation form with validation
  *
  * Navigation between pages is handled by Next/Back buttons and swipe gestures.
  * A page indicator (dots) shows the current position.
@@ -143,7 +148,11 @@ fun SetupScreen(
                         illustrationResId = R.raw.anim_onboarding_tracking,
                         illustrationContentDescription = stringResource(R.string.lottie_cd_onboarding_tracking),
                     )
-                    3 -> CreatePassphrasePage(
+                    3 -> CycleLengthPage(
+                        pendingDays = uiState.pendingTypicalCycleLength,
+                        onEvent = onEvent,
+                    )
+                    4 -> CreatePassphrasePage(
                         uiState = uiState,
                         onEvent = onEvent,
                     )
@@ -305,7 +314,78 @@ private fun InfoPage(
 }
 
 /**
- * Passphrase creation form (page 4 of the onboarding flow).
+ * Optional typical-cycle-length question (page 4 of the onboarding flow, issue #143).
+ *
+ * A slider (21–40 days) sets [PassphraseUiState.pendingTypicalCycleLength]; a
+ * "Skip for now" button clears it. The answer is persisted to the encrypted
+ * database only after the first unlock succeeds, and can be changed any time
+ * in Settings. Skipping is a first-class choice — predictions then start from
+ * the 28-day default until enough cycles are logged.
+ *
+ * @param pendingDays the currently selected answer, or null when skipped/unset.
+ * @param onEvent     callback to dispatch [PassphraseEvent.TypicalCycleLengthChanged].
+ */
+@Composable
+private fun CycleLengthPage(
+    pendingDays: Int?,
+    onEvent: (PassphraseEvent) -> Unit,
+) {
+    val dims = LocalDimensions.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = dims.md),
+    ) {
+        Text(
+            text = stringResource(R.string.setup_cycle_length_title),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Spacer(Modifier.height(dims.md))
+        MarkdownText(
+            text = stringResource(R.string.setup_cycle_length_body),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(dims.lg))
+        Text(
+            text = if (pendingDays != null) {
+                stringResource(R.string.setup_cycle_length_days, pendingDays)
+            } else {
+                stringResource(R.string.setup_cycle_length_unset)
+            },
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .testTag("cycle-length-value"),
+        )
+        Spacer(Modifier.height(dims.sm))
+        Slider(
+            value = (pendingDays ?: CycleLengthResolver.DEFAULT_CYCLE_LENGTH_DAYS).toFloat(),
+            onValueChange = {
+                onEvent(PassphraseEvent.TypicalCycleLengthChanged(it.roundToInt()))
+            },
+            valueRange = CycleSettings.MIN_CYCLE_LENGTH_DAYS.toFloat()..
+                CycleSettings.MAX_CYCLE_LENGTH_DAYS.toFloat(),
+            steps = CycleSettings.MAX_CYCLE_LENGTH_DAYS -
+                CycleSettings.MIN_CYCLE_LENGTH_DAYS - 1,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("cycle-length-slider"),
+        )
+        if (pendingDays != null) {
+            Spacer(Modifier.height(dims.sm))
+            TextButton(
+                onClick = { onEvent(PassphraseEvent.TypicalCycleLengthChanged(null)) },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) {
+                Text(stringResource(R.string.setup_cycle_length_skip))
+            }
+        }
+    }
+}
+
+/**
+ * Passphrase creation form (page 5 of the onboarding flow).
  *
  * Contains two password fields with visibility toggles, inline validation errors,
  * and a "Create and Unlock" button. Validation is performed by the ViewModel via

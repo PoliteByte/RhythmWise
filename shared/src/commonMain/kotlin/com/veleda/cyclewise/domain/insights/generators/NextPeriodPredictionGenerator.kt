@@ -1,6 +1,7 @@
 package com.veleda.cyclewise.domain.insights.generators
 
 import com.veleda.cyclewise.domain.insights.Insight
+import com.veleda.cyclewise.domain.CycleLengthResolver
 import com.veleda.cyclewise.domain.insights.NextPeriodPrediction
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
@@ -14,10 +15,11 @@ import kotlin.time.ExperimentalTime
 /**
  * Predicts the start date of the next menstrual period.
  *
- * Calculation: `latestPeriod.startDate + averageCycleLength (rounded)`.
- *
- * Returns an empty list if the average cycle length is unavailable (fewer than 2 completed
- * periods) or if no periods exist at all.
+ * Calculation: `latestPeriod.startDate + resolved cycle length (rounded)`, where
+ * the cycle length comes from [CycleLengthResolver] — derived average when ≥ 2
+ * completed cycles exist, else the user's typical cycle length, else the 28-day
+ * default (issue #143). A prediction therefore appears from the very first
+ * logged period; only a completely empty history yields no insight.
  *
  * This generator runs first in the [InsightEngine] pipeline so that other generators
  * (e.g., [SymptomPhasePatternGenerator]) can use its prediction for recurrence forecasting.
@@ -25,22 +27,19 @@ import kotlin.time.ExperimentalTime
 class NextPeriodPredictionGenerator : InsightGenerator {
     /**
      * Calculates the predicted start date of the next period by adding the
-     * rounded average cycle length to the latest period's start date.
+     * resolved cycle length to the latest period's start date.
      *
-     * @param data Aggregated cycle data; requires a non-null average cycle length
-     *             and at least one period.
-     * @return A single-element list with a [NextPeriodPrediction], or empty if
-     *         the average is unavailable or no periods exist.
+     * @param data Aggregated cycle data; requires at least one period.
+     * @return A single-element list with a [NextPeriodPrediction], or empty
+     *         when no periods exist.
      */
     @OptIn(ExperimentalTime::class)
     override fun generate(data: InsightData): List<Insight> {
-        val latestCycle = data.allPeriods.firstOrNull()
-        if (data.averageCycleLength == null || latestCycle == null) {
-            return emptyList()
-        }
+        val latestCycle = data.allPeriods.firstOrNull() ?: return emptyList()
 
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val averageLengthInDays = data.averageCycleLength.roundToInt()
+        val resolved = CycleLengthResolver.resolve(data.allPeriods, data.typicalCycleLengthDays)
+        val averageLengthInDays = resolved.days.roundToInt()
         val predictedDate = latestCycle.startDate.plus(averageLengthInDays, DateTimeUnit.DAY)
 
         val daysUntil = today.daysUntil(predictedDate)

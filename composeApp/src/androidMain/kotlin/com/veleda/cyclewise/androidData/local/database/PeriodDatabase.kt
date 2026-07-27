@@ -14,6 +14,7 @@ import com.veleda.cyclewise.androidData.local.dao.SymptomDao
 import com.veleda.cyclewise.androidData.local.dao.SymptomLogDao
 import com.veleda.cyclewise.androidData.local.dao.CustomTagDao
 import com.veleda.cyclewise.androidData.local.dao.CustomTagLogDao
+import com.veleda.cyclewise.androidData.local.dao.UserCycleSettingsDao
 import com.veleda.cyclewise.androidData.local.dao.WaterIntakeDao
 import com.veleda.cyclewise.androidData.local.database.migrations.Migration_1_2
 import com.veleda.cyclewise.androidData.local.database.migrations.Migration_2_3
@@ -27,6 +28,7 @@ import com.veleda.cyclewise.androidData.local.database.migrations.Migration_9_10
 import com.veleda.cyclewise.androidData.local.database.migrations.Migration_10_11
 import com.veleda.cyclewise.androidData.local.database.migrations.Migration_11_12
 import com.veleda.cyclewise.androidData.local.database.migrations.Migration_12_13
+import com.veleda.cyclewise.androidData.local.database.migrations.Migration_13_14
 import com.veleda.cyclewise.androidData.local.entities.CustomTagEntity
 import com.veleda.cyclewise.androidData.local.entities.CustomTagLogEntity
 import com.veleda.cyclewise.androidData.local.entities.PeriodEntity
@@ -37,6 +39,7 @@ import com.veleda.cyclewise.androidData.local.entities.MedicationLogEntity
 import com.veleda.cyclewise.androidData.local.entities.SymptomEntity
 import com.veleda.cyclewise.androidData.local.entities.SymptomLogEntity
 import com.veleda.cyclewise.androidData.local.entities.PeriodLogEntity
+import com.veleda.cyclewise.androidData.local.entities.UserCycleSettingsEntity
 import com.veleda.cyclewise.androidData.local.entities.WaterIntakeEntity
 import net.sqlcipher.database.SupportFactory
 
@@ -49,7 +52,7 @@ import net.sqlcipher.database.SupportFactory
  * **Security:** All data at rest is AES-256-GCM encrypted via SQLCipher.
  * The database file (`cyclewise.db`) is unreadable without the correct passphrase.
  *
- * **Schema version:** 13. All migrations are registered in [create] and tested individually.
+ * **Schema version:** 14. All migrations are registered in [create] and tested individually.
  */
 @Database(
     entities = [
@@ -62,9 +65,10 @@ import net.sqlcipher.database.SupportFactory
         PeriodLogEntity::class,
         WaterIntakeEntity::class,
         CustomTagEntity::class,
-        CustomTagLogEntity::class
+        CustomTagLogEntity::class,
+        UserCycleSettingsEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -98,6 +102,9 @@ abstract class PeriodDatabase : RoomDatabase() {
 
     /** Returns the [CustomTagLogDao] for CRUD operations on the `custom_tag_logs` table. */
     abstract fun customTagLogDao(): CustomTagLogDao
+
+    /** Returns the [UserCycleSettingsDao] for the single-row `user_cycle_settings` table. */
+    abstract fun userCycleSettingsDao(): UserCycleSettingsDao
 
     /**
      * Re-encrypts the database with a new passphrase-derived key using raw SQLCipher's
@@ -246,7 +253,8 @@ abstract class PeriodDatabase : RoomDatabase() {
                     Migration_9_10,
                     Migration_10_11,
                     Migration_11_12,
-                    Migration_12_13
+                    Migration_12_13,
+                    Migration_13_14
                 )
                 .build()
         }

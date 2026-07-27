@@ -114,7 +114,7 @@ class SetupScreenTest {
     fun nextButton_WHEN_navigatedToLastPage_THEN_notDisplayed() {
         // Given — navigate through all pages to page 3 (last)
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -145,7 +145,7 @@ class SetupScreenTest {
     fun createPage_WHEN_navigatedTo_THEN_fieldsDisplayed() {
         // Given — navigate to last page
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -160,7 +160,7 @@ class SetupScreenTest {
     fun createButton_WHEN_passphraseShort_THEN_isDisabled() {
         // Given — navigate to last page
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -177,7 +177,7 @@ class SetupScreenTest {
     fun createButton_WHEN_passphraseLongEnoughAndConfirmed_THEN_isEnabled() {
         // Given — navigate to last page
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -194,7 +194,7 @@ class SetupScreenTest {
     fun createButton_WHEN_confirmationEmpty_THEN_isDisabled() {
         // Given — navigate to last page
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -211,7 +211,7 @@ class SetupScreenTest {
         // Given
         val events = mutableListOf<PassphraseEvent>()
         setContent(onEvent = { events.add(it) })
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -236,7 +236,7 @@ class SetupScreenTest {
     fun createButton_WHEN_isUnlocking_THEN_isDisabled() {
         // Given
         setContent(uiState = PassphraseUiState(isUnlocking = true))
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -255,7 +255,7 @@ class SetupScreenTest {
     fun passphraseError_WHEN_nonNull_THEN_errorTextDisplayed() {
         // Given — navigate to last page
         setContent(uiState = PassphraseUiState(passphraseError = "too_short"))
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -269,7 +269,7 @@ class SetupScreenTest {
     fun confirmationError_WHEN_nonNull_THEN_errorTextDisplayed() {
         // Given
         setContent(uiState = PassphraseUiState(confirmationError = "mismatch"))
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -287,7 +287,7 @@ class SetupScreenTest {
     fun visibilityToggle_WHEN_rendered_THEN_showButtonsDisplayed() {
         // Given — navigate to last page
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }

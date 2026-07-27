@@ -318,6 +318,7 @@ val appModule = module {
         scoped { get<PeriodDatabase>().waterIntakeDao() }
         scoped { get<PeriodDatabase>().customTagDao() }
         scoped { get<PeriodDatabase>().customTagLogDao() }
+        scoped { get<PeriodDatabase>().userCycleSettingsDao() }
 
         // Repository Provider
         scoped<PeriodRepository> {
@@ -333,6 +334,7 @@ val appModule = module {
                 waterIntakeDao = get(),
                 customTagDao = get(),
                 customTagLogDao = get(),
+                userCycleSettingsDao = get(),
             )
         }
 

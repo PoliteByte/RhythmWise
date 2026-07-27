@@ -32,6 +32,14 @@ sealed interface PassphraseEvent {
      */
     data class TypicalCycleLengthChanged(val days: Int?) : PassphraseEvent
 
+    /**
+     * The user answered (or skipped, with null) the onboarding period-length
+     * question — the easier of the two cycle questions, since most users know
+     * how long they bleed even when they don't know their cycle length.
+     * Persisted alongside the cycle length after the first unlock.
+     */
+    data class DefaultPeriodLengthChanged(val days: Int?) : PassphraseEvent
+
     // ── Backup Import ───────────────────────────────────────────────
 
     /** User tapped "Import Backup" from the unlock or setup screen. */

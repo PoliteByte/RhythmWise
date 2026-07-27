@@ -71,7 +71,7 @@ private const val SETUP_PAGE_COUNT = 5
  * 1. Privacy explanation ("Your Data Stays on This Device")
  * 2. Passphrase guidance ("Choosing a Passphrase You Will Remember")
  * 3. No-recovery warning ("No Recovery, No Exceptions")
- * 4. Typical cycle length question — optional, skippable (issue #143)
+ * 4. Cycle questions — period length and typical cycle length, both skippable (issue #143)
  * 5. Passphrase creation form with validation
  *
  * Navigation between pages is handled by Next/Back buttons and swipe gestures.
@@ -148,8 +148,9 @@ fun SetupScreen(
                         illustrationResId = R.raw.anim_onboarding_tracking,
                         illustrationContentDescription = stringResource(R.string.lottie_cd_onboarding_tracking),
                     )
-                    3 -> CycleLengthPage(
-                        pendingDays = uiState.pendingTypicalCycleLength,
+                    3 -> CycleQuestionsPage(
+                        pendingPeriodDays = uiState.pendingDefaultPeriodLength,
+                        pendingCycleDays = uiState.pendingTypicalCycleLength,
                         onEvent = onEvent,
                     )
                     4 -> CreatePassphrasePage(
@@ -314,20 +315,23 @@ private fun InfoPage(
 }
 
 /**
- * Optional typical-cycle-length question (page 4 of the onboarding flow, issue #143).
+ * Optional cycle questions (page 4 of the onboarding flow, issue #143).
  *
- * A slider (21–40 days) sets [PassphraseUiState.pendingTypicalCycleLength]; a
- * "Skip for now" button clears it. The answer is persisted to the encrypted
- * database only after the first unlock succeeds, and can be changed any time
- * in Settings. Skipping is a first-class choice — predictions then start from
- * the 28-day default until enough cycles are logged.
+ * Two skippable sliders, easiest question first: **period length** (how many
+ * days of bleeding — the number most users actually know) drives one-tap
+ * period auto-fill (issue #144); **typical cycle length** seeds predictions
+ * and phase coloring until logged history takes over. Answers persist to the
+ * encrypted database only after the first unlock succeeds and can be changed
+ * any time in Settings. Skipping either is a first-class choice.
  *
- * @param pendingDays the currently selected answer, or null when skipped/unset.
- * @param onEvent     callback to dispatch [PassphraseEvent.TypicalCycleLengthChanged].
+ * @param pendingPeriodDays the period-length answer, or null when skipped/unset.
+ * @param pendingCycleDays  the cycle-length answer, or null when skipped/unset.
+ * @param onEvent           callback to dispatch the two answer events.
  */
 @Composable
-private fun CycleLengthPage(
-    pendingDays: Int?,
+private fun CycleQuestionsPage(
+    pendingPeriodDays: Int?,
+    pendingCycleDays: Int?,
     onEvent: (PassphraseEvent) -> Unit,
 ) {
     val dims = LocalDimensions.current
@@ -338,44 +342,87 @@ private fun CycleLengthPage(
             .padding(vertical = dims.md),
     ) {
         Text(
-            text = stringResource(R.string.setup_cycle_length_title),
+            text = stringResource(R.string.setup_period_length_title),
             style = MaterialTheme.typography.headlineSmall,
         )
+        Spacer(Modifier.height(dims.sm))
+        MarkdownText(
+            text = stringResource(R.string.setup_period_length_body),
+            style = MaterialTheme.typography.bodyMedium,
+        )
         Spacer(Modifier.height(dims.md))
+        QuestionSlider(
+            pendingDays = pendingPeriodDays,
+            unsetTextRes = R.string.setup_period_length_unset,
+            defaultDays = CycleSettings.DEFAULT_PERIOD_LENGTH_DAYS,
+            range = CycleSettings.MIN_PERIOD_LENGTH_DAYS..CycleSettings.MAX_PERIOD_LENGTH_DAYS,
+            testTagPrefix = "period-length",
+            onChanged = { onEvent(PassphraseEvent.DefaultPeriodLengthChanged(it)) },
+        )
+
+        Spacer(Modifier.height(dims.lg))
+
+        Text(
+            text = stringResource(R.string.setup_cycle_length_title),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Spacer(Modifier.height(dims.sm))
         MarkdownText(
             text = stringResource(R.string.setup_cycle_length_body),
             style = MaterialTheme.typography.bodyMedium,
         )
-        Spacer(Modifier.height(dims.lg))
+        Spacer(Modifier.height(dims.md))
+        QuestionSlider(
+            pendingDays = pendingCycleDays,
+            unsetTextRes = R.string.setup_cycle_length_unset,
+            defaultDays = CycleLengthResolver.DEFAULT_CYCLE_LENGTH_DAYS,
+            range = CycleSettings.MIN_CYCLE_LENGTH_DAYS..CycleSettings.MAX_CYCLE_LENGTH_DAYS,
+            testTagPrefix = "cycle-length",
+            onChanged = { onEvent(PassphraseEvent.TypicalCycleLengthChanged(it)) },
+        )
+    }
+}
+
+/**
+ * One skippable day-count question: current value (or the unset explanation),
+ * a stepped slider, and a "Skip for now" clear button once a value is set.
+ */
+@Composable
+private fun QuestionSlider(
+    pendingDays: Int?,
+    @androidx.annotation.StringRes unsetTextRes: Int,
+    defaultDays: Int,
+    range: IntRange,
+    testTagPrefix: String,
+    onChanged: (Int?) -> Unit,
+) {
+    val dims = LocalDimensions.current
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = if (pendingDays != null) {
                 stringResource(R.string.setup_cycle_length_days, pendingDays)
             } else {
-                stringResource(R.string.setup_cycle_length_unset)
+                stringResource(unsetTextRes)
             },
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .testTag("cycle-length-value"),
+                .testTag("$testTagPrefix-value"),
         )
         Spacer(Modifier.height(dims.sm))
         Slider(
-            value = (pendingDays ?: CycleLengthResolver.DEFAULT_CYCLE_LENGTH_DAYS).toFloat(),
-            onValueChange = {
-                onEvent(PassphraseEvent.TypicalCycleLengthChanged(it.roundToInt()))
-            },
-            valueRange = CycleSettings.MIN_CYCLE_LENGTH_DAYS.toFloat()..
-                CycleSettings.MAX_CYCLE_LENGTH_DAYS.toFloat(),
-            steps = CycleSettings.MAX_CYCLE_LENGTH_DAYS -
-                CycleSettings.MIN_CYCLE_LENGTH_DAYS - 1,
+            value = (pendingDays ?: defaultDays).toFloat(),
+            onValueChange = { onChanged(it.roundToInt()) },
+            valueRange = range.first.toFloat()..range.last.toFloat(),
+            steps = range.last - range.first - 1,
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag("cycle-length-slider"),
+                .testTag("$testTagPrefix-slider"),
         )
         if (pendingDays != null) {
             Spacer(Modifier.height(dims.sm))
             TextButton(
-                onClick = { onEvent(PassphraseEvent.TypicalCycleLengthChanged(null)) },
+                onClick = { onChanged(null) },
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
                 Text(stringResource(R.string.setup_cycle_length_skip))

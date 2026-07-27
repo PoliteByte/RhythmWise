@@ -67,6 +67,11 @@ data class PassphraseUiState(
      * the database does not exist until then.
      */
     val pendingTypicalCycleLength: Int? = null,
+    /**
+     * Onboarding answer to "how long does your period usually last?" (issue
+     * #143 follow-up). Null = skipped/unanswered; persisted after first unlock.
+     */
+    val pendingDefaultPeriodLength: Int? = null,
 )
 
 /**
@@ -189,6 +194,8 @@ class PassphraseViewModel(
             }
             is PassphraseEvent.TypicalCycleLengthChanged ->
                 state.copy(pendingTypicalCycleLength = event.days)
+            is PassphraseEvent.DefaultPeriodLengthChanged ->
+                state.copy(pendingDefaultPeriodLength = event.days)
 
             // ── Backup Import ───────────────────────────────────────
             is PassphraseEvent.ImportBackupClicked -> state // effect-only
@@ -235,11 +242,14 @@ class PassphraseViewModel(
             try {
                 sessionManager.openSession(passphrase)
                 if (isSetup) {
-                    // Persist the onboarding cycle-length answer now that the
+                    // Persist the onboarding cycle answers now that the
                     // encrypted database exists (issue #143). Skipped answers
                     // (null) need no write — absence already means "unset".
                     _uiState.value.pendingTypicalCycleLength?.let { days ->
                         sessionManager.setTypicalCycleLengthDays(days)
+                    }
+                    _uiState.value.pendingDefaultPeriodLength?.let { days ->
+                        sessionManager.setDefaultPeriodLengthDays(days)
                     }
                     _effect.emit(PassphraseEffect.SetupComplete)
                 } else {

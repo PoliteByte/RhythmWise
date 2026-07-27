@@ -306,6 +306,9 @@
     <string name="passphrase_water_toggle">Quick log water</string>
 
     <!-- Setup / Onboarding -->
+    <string name="setup_period_length_title">How Long Does Your Period Usually Last?</string>
+    <string name="setup_period_length_body">The days you actually bleed — most people know this one. RhythmWise uses it to mark the right number of days when you log a period start. Not sure? Skip it.</string>
+    <string name="setup_period_length_unset">Not set — 5 days will be assumed until you log a few periods.</string>
     <string name="setup_cycle_length_title">What\'s Your Typical Cycle Length?</string>
     <string name="setup_cycle_length_body">Count from the first day of one period to the first day of the next. If you\'re not sure, skip this — RhythmWise will learn your rhythm as you log, and you can set or change this any time in Settings.</string>
     <string name="setup_cycle_length_days">%1$d days</string>

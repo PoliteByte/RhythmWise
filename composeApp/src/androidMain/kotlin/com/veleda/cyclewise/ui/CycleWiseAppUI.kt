@@ -153,6 +153,7 @@ fun CycleWiseAppUI() {
                     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
                     DailyLogScreen(
                         date = today,
+                        showCycleStatus = true,
                         onNavigateToTracker = {
                             navController.navigate(NavRoute.Tracker.route) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = true }

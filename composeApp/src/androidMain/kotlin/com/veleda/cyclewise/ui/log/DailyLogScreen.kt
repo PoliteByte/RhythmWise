@@ -106,6 +106,7 @@ fun DailyLogScreen(
     date: LocalDate,
     onNavigateToTracker: () -> Unit = {},
     onDone: () -> Unit = {},
+    showCycleStatus: Boolean = false,
 ) {
     val dims = LocalDimensions.current
     val koin = getKoin()
@@ -324,6 +325,21 @@ fun DailyLogScreen(
                             .padding(horizontal = dims.md, vertical = dims.md)
                             .coachMarkTarget(HintKey.DAILY_LOG_WELCOME, coachMarkState)
                     )
+
+                    // Glanceable cycle status — home screen only (issue #142)
+                    if (showCycleStatus) {
+                        uiState.cycleStatus?.let { status ->
+                            CycleStatusBanner(
+                                status = status,
+                                onClick = onNavigateToTracker,
+                                modifier = Modifier.padding(
+                                    start = dims.md,
+                                    end = dims.md,
+                                    bottom = dims.sm,
+                                ),
+                            )
+                        }
+                    }
 
                     // Page indicator tabs
                     ScrollableTabRow(

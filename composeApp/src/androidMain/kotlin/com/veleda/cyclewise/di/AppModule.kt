@@ -41,6 +41,7 @@ import com.veleda.cyclewise.domain.providers.CustomTagLibraryProvider
 import com.veleda.cyclewise.domain.providers.MedicationLibraryProvider
 import com.veleda.cyclewise.domain.providers.SymptomLibraryProvider
 import com.veleda.cyclewise.domain.usecases.AutoCloseOngoingPeriodUseCase
+import com.veleda.cyclewise.domain.usecases.GetCycleStatusUseCase
 import com.veleda.cyclewise.domain.usecases.DebugSeederUseCase
 import com.veleda.cyclewise.domain.usecases.DeleteAllDataUseCase
 import com.veleda.cyclewise.domain.usecases.TutorialCleanupUseCase
@@ -349,6 +350,7 @@ val appModule = module {
         scoped { TutorialSeederUseCase(get()) }
         scoped { TutorialCleanupUseCase(get()) }
         scoped { AutoCloseOngoingPeriodUseCase(get()) }
+        scoped { GetCycleStatusUseCase(get()) }
         scoped { RenameSymptomUseCase(get()) }
         scoped { DeleteSymptomUseCase(get()) }
         scoped { RenameMedicationUseCase(get()) }
@@ -384,6 +386,7 @@ val appModule = module {
                 renameCustomTagUseCase = get(),
                 deleteCustomTagUseCase = get(),
                 hintPreferences = get(),
+                getCycleStatus = get(),
             )
         }
 

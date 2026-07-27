@@ -462,10 +462,10 @@ fun DailyLogScreen(
                                 },
                                 onLibidoChanged = { viewModel.onEvent(DailyLogEvent.LibidoScoreChanged(it)) },
                                 onWaterIncrement = {
+                                    // No walkthrough advancement here (issue #148):
+                                    // the water step is informational, so the user
+                                    // can tap + repeatedly; the tooltip advances it
                                     viewModel.onEvent(DailyLogEvent.WaterIncrement)
-                                    if (activeHint?.def?.key == HintKey.DAILY_LOG_WATER) {
-                                        coachMarkState.advanceOrDismiss(DAILY_LOG_HINTS)
-                                    }
                                 },
                                 onWaterDecrement = { viewModel.onEvent(DailyLogEvent.WaterDecrement) },
                                 onDone = onDone,

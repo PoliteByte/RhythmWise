@@ -62,7 +62,6 @@ class DailyLogWalkthroughTest {
         val taskKeys = listOf(
             HintKey.DAILY_LOG_MOOD,
             HintKey.DAILY_LOG_ENERGY,
-            HintKey.DAILY_LOG_WATER,
             HintKey.DAILY_LOG_PERIOD_TAB,
             HintKey.DAILY_LOG_PERIOD_TOGGLE,
             HintKey.DAILY_LOG_SYMPTOMS_TAB,
@@ -73,6 +72,15 @@ class DailyLogWalkthroughTest {
             assertNotNull(def, "$key should exist")
             assertTrue(def.requiresAction, "$key should have requiresAction = true")
         }
+    }
+
+    @Test
+    fun `water step is informational so the counter can be tapped repeatedly`() {
+        // Issue #148: requiresAction=true advanced on the first + tap and dimmed
+        // the counter mid-interaction ("can't add multiple cups during demo")
+        val def = DAILY_LOG_HINTS[HintKey.DAILY_LOG_WATER]
+        assertNotNull(def, "WATER step should exist")
+        assertTrue(!def.requiresAction, "WATER should be an info step")
     }
 
     @Test

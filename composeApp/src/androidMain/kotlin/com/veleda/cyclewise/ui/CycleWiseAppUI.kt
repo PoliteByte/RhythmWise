@@ -110,7 +110,9 @@ fun CycleWiseAppUI() {
             if (shouldRunTutorialBoundsCleanup(currentRoute, dailyLogDone, trackerDone)) {
                 // Mark all hints seen so walkthroughs don't restart
                 HintKey.entries.forEach { hintPreferences.markHintSeen(it) }
-                val sessionScope = koin.getScope("session")
+                // Session may have closed (autolock) during the delay above —
+                // getScope would throw and crash the app (issue #141)
+                val sessionScope = koin.getScopeOrNull("session") ?: return@LaunchedEffect
                 val cleanup: TutorialCleanupUseCase = sessionScope.get()
                 runSeedCleanupIfNeeded(appSettings, cleanup)
             }

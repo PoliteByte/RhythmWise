@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import com.veleda.cyclewise.ui.components.LottieAnimationBox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -109,8 +110,12 @@ fun PassphraseScreen(
         }
     }
 
-    // Wait for DataStore to resolve before rendering to avoid a flash
-    if (!uiState.isFirstTimeLoaded) return
+    // Show a spinner until DataStore resolves — never render nothing: a stalled
+    // or failed read would otherwise leave a permanently blank screen (issue #141)
+    if (!uiState.isFirstTimeLoaded) {
+        PassphraseLoadingIndicator()
+        return
+    }
 
     if (uiState.isFirstTime) {
         SetupScreen(
@@ -326,7 +331,8 @@ internal fun UnlockScreen(
         }
         }
 
-        // Loading overlay
+        // Loading overlay — label the wait so the 1-3 s key derivation reads as
+        // deliberate work rather than a freeze (issue #141)
         if (uiState.isUnlocking) {
             Box(
                 modifier = Modifier
@@ -334,13 +340,41 @@ internal fun UnlockScreen(
                     .background(MaterialTheme.colorScheme.scrim.copy(alpha = SCRIM_ALPHA)),
                 contentAlignment = Alignment.Center
             ) {
-                LottieAnimationBox(
-                    animationResId = R.raw.anim_loading_general,
-                    modifier = Modifier.size(dims.iconLg),
-                    contentDescription = stringResource(R.string.lottie_cd_loading),
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    LottieAnimationBox(
+                        animationResId = R.raw.anim_loading_general,
+                        modifier = Modifier.size(dims.iconLg),
+                        contentDescription = stringResource(R.string.lottie_cd_loading),
+                    )
+                    Spacer(modifier = Modifier.height(dims.sm))
+                    Text(
+                        text = stringResource(R.string.passphrase_unlocking),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
             }
         }
+    }
+}
+
+/**
+ * Full-screen centered progress indicator shown while the passphrase screen's
+ * initial settings read resolves.
+ *
+ * Replaces the former blank early-return: rendering nothing meant a stalled or
+ * failed DataStore read left the app on a permanently empty screen with no
+ * feedback (issue #141).
+ */
+@Composable
+internal fun PassphraseLoadingIndicator(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("passphrase-loading"),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator()
     }
 }
 

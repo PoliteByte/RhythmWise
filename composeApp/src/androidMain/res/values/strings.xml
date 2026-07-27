@@ -261,7 +261,7 @@
     <string name="settings_reset_hints_confirmation">Tutorial hints have been reset</string>
 
     <!-- Passphrase -->
-    <string name="passphrase_unlocking">Unlocking…</string>
+    <string name="passphrase_unlocking">Unlocking your data…</string>
     <string name="passphrase_instruction">Enter your passphrase</string>
     <string name="passphrase_label">Passphrase</string>
     <string name="passphrase_unlock">Unlock</string>

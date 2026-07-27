@@ -119,7 +119,9 @@ fun TrackerScreen(navController: NavController) {
     val skipTrackerTutorial: () -> Unit = {
         trackerWalkthroughActive = false
         coroutineScope.launch {
-            val sessionScope = koin.getScope("session")
+            // Session may close (autolock/logout) before this coroutine runs —
+            // getScope would throw and crash the app (issue #141)
+            val sessionScope = koin.getScopeOrNull("session") ?: return@launch
             val cleanup: TutorialCleanupUseCase = sessionScope.get()
             runSeedCleanupIfNeeded(appSettings, cleanup)
         }
@@ -151,7 +153,9 @@ fun TrackerScreen(navController: NavController) {
         if (trackerWalkthroughActive && activeHint == null && pendingKey == null) {
             trackerWalkthroughActive = false
             coroutineScope.launch {
-                val sessionScope = koin.getScope("session")
+                // Session may close (autolock/logout) before this coroutine runs —
+                // getScope would throw and crash the app (issue #141)
+                val sessionScope = koin.getScopeOrNull("session") ?: return@launch
                 val cleanup: TutorialCleanupUseCase = sessionScope.get()
                 runSeedCleanupIfNeeded(appSettings, cleanup)
             }

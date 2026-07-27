@@ -40,13 +40,13 @@
     <!-- Reminders -->
     <string name="reminder_settings_title">Reminders</string>
     <string name="reminder_period_label">Period Prediction</string>
-    <string name="reminder_period_description">Notify before your predicted next period</string>
+    <string name="reminder_period_description">Notifies you before your predicted next period.</string>
     <string name="reminder_period_days_before_label">Days before: %d</string>
     <string name="reminder_medication_label">Daily Medication</string>
-    <string name="reminder_medication_description">A daily reminder at your chosen time</string>
+    <string name="reminder_medication_description">Reminds you to take your medication at your chosen time each day.</string>
     <string name="reminder_medication_time_label">Reminder time</string>
     <string name="reminder_hydration_label">Hydration</string>
-    <string name="reminder_hydration_description">Remind to log water during the day</string>
+    <string name="reminder_hydration_description">Reminds you to log your water intake during the day.</string>
     <string name="reminder_hydration_goal_label">Daily goal (cups): %d</string>
     <string name="reminder_hydration_frequency_label">Reminder frequency</string>
     <string name="reminder_hydration_start_label">Start hour</string>
@@ -215,7 +215,7 @@
     <string name="settings_autolock_title">Auto-lock timeout (minutes)</string>
     <string name="settings_security_title">Security</string>
     <string name="settings_lock_button">Lock Now</string>
-    <string name="settings_locked_message">Currently locked - unlock to access secured data.</string>
+    <string name="settings_locked_message">Currently locked. Unlock the app to access your secured data.</string>
     <string name="settings_insights_title">Insight Settings</string>
     <string name="settings_top_symptoms">Top Frequent Symptoms to Display: %d</string>
     <string name="settings_developer_title">Developer Options</string>
@@ -243,7 +243,7 @@
     <string name="settings_section_app_info">App Info</string>
     <string name="settings_section_utilities">Utilities</string>
     <string name="settings_section_phase_colors">Phase Colors</string>
-    <string name="settings_autolock_description">Lock the app after inactivity</string>
+    <string name="settings_autolock_description">Locks the app automatically after a period of inactivity.</string>
     <string name="settings_autolock_minutes_unit">min</string>
     <string name="show_mood_description">Display mood score in daily log summary</string>
     <string name="show_energy_description">Display energy level in daily log summary</string>
@@ -256,9 +256,9 @@
 
     <!-- Tutorial -->
     <string name="settings_section_tutorial">Tutorial</string>
-    <string name="settings_reset_hints">Reset Tutorial Hints</string>
-    <string name="settings_reset_hints_description">Show the guided walkthrough again next time you open a screen</string>
-    <string name="settings_reset_hints_confirmation">Tutorial hints have been reset</string>
+    <string name="settings_reset_hints">Replay Tutorial</string>
+    <string name="settings_reset_hints_description">Replays the guided tour of the app. Your data is not affected.</string>
+    <string name="settings_reset_hints_confirmation">Tutorial reset. It will replay when you next open the Home or Calendar tab.</string>
 
     <!-- Passphrase -->
     <string name="passphrase_unlocking">Unlocking your data…</string>
@@ -401,7 +401,7 @@
 
     <!-- Change Passphrase -->
     <string name="settings_change_passphrase">Change Passphrase</string>
-    <string name="settings_change_passphrase_description">Update the passphrase that protects your data</string>
+    <string name="settings_change_passphrase_description">Updates the passphrase that protects your data.</string>
     <string name="settings_change_passphrase_title">Change Passphrase</string>
     <string name="settings_change_passphrase_current_label">Current passphrase</string>
     <string name="settings_change_passphrase_new_label">New passphrase</string>
@@ -468,7 +468,7 @@
     <!-- Data Management -->
     <string name="settings_section_data_management">Data Management</string>
     <string name="settings_delete_all_data">Delete All Data</string>
-    <string name="settings_delete_all_data_description">Permanently erase all data and return to a fresh install</string>
+    <string name="settings_delete_all_data_description">Permanently erases all of your data and returns the app to a fresh install.</string>
     <string name="settings_delete_first_title">Delete All Data?</string>
     <string name="settings_delete_first_body">This will permanently and irreversibly delete all of your data, including cycle history, daily logs, symptoms, medications, notes, preferences, and your encryption key.\n\nThis cannot be undone. The app will return to its initial setup screen as if freshly installed.</string>
     <string name="settings_delete_first_confirm">Delete Everything</string>

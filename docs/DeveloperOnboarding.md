@@ -1123,8 +1123,9 @@ RhythmWise is a **single-activity** Compose application. The launch sequence:
 2. **`MainActivity`** (`MainActivity.kt`) — Intentionally minimal:
    - Calls `installSplashScreen()` for the Android 12+ splash screen
    - Calls `enableEdgeToEdge()` for fullscreen content behind system bars
-   - Sets `FLAG_SECURE` on the window — blocks screenshots, screen recording,
-     and recent-apps thumbnails across all screens
+   - Sets `FLAG_SECURE` on the window for non-debuggable builds — blocks
+     screenshots, screen recording, and recent-apps thumbnails across all
+     screens on every distributable build (debug builds allow capture for QA)
    - Registers a global uncaught exception handler for crash logging
    - Calls `setContent { CycleWiseAppUI() }` — all Compose UI starts here
 
@@ -3027,8 +3028,12 @@ SDKs, crash reporters, or any dependency that requires `android.permission.INTER
 
 ### Screenshot Protection
 
-`MainActivity` sets `FLAG_SECURE` on the window before `setContent`. This blocks
-screenshots, screen recording, and recent-apps thumbnails. Do not remove this flag.
+`MainActivity` sets `FLAG_SECURE` on the window before `setContent` whenever the
+build is **not debuggable** (see `shouldApplySecureFlag`). This blocks screenshots,
+screen recording, and recent-apps thumbnails on every distributable build. Do not
+remove this flag or weaken the release-side condition. Debug builds skip the flag
+so emulator screenshot tooling (UI verification, Play Store capture sessions) can
+see the screen.
 
 ---
 

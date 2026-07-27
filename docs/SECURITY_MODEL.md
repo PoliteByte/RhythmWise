@@ -47,8 +47,12 @@
 ---
 
 ## Screen Protection
-- `FLAG_SECURE` is set on the activity window at launch.
+- `FLAG_SECURE` is set on the activity window at launch for all non-debuggable
+  (release) builds — every build a user can install.
 - Blocks screenshots, screen recording, and recent-apps thumbnails.
+- Debuggable builds skip the flag so emulator-driven UI verification and Play
+  Store screenshot sessions can capture the screen. Debuggable builds are never
+  distributed; Google Play rejects them at upload.
 
 ---
 

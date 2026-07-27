@@ -18,30 +18,36 @@ These are one-time setup items. Once done, skip ahead to [Per-release workflow](
 | Release keystore (`.jks`) | Local disk, **not** in the repo | Generate per `docs/PLAY_STORE_PUBLISHING_GUIDE_ORG.md` §3. Back up to encrypted offline storage. |
 | Signing credentials | `local.properties` (gitignored) | `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`. |
 | `signingConfigs.release` block | `composeApp/build.gradle.kts` | Reads from `local.properties`. See §3 of the Play Store guide for the template. |
-| Git authentication | SSH key on GitHub | Use SSH rather than HTTPS — Windows Credential Manager can cache stale creds that survive repo transfers and silently 403 on push. See [Git auth — SSH setup](#git-auth--ssh-setup) below. |
-| GitHub CLI | Local install | Used for creating releases. Install: `winget install GitHub.cli`, then `gh auth login`. |
+| Git authentication | worldrunner-agent GitHub App (machine-global) | Plain `git push`/`pull`/`fetch` authenticate via the global `wr-app` credential helper — no personal credentials, no SSH keys. See [Git auth — GitHub App](#git-auth--github-app) below. |
+| GitHub CLI | Local install | Used for creating releases. Install: `winget install GitHub.cli`. Do **not** run `gh auth login` — authenticate per session with an app token (see below). |
 | Play Console access | Browser | Required for the AAB upload. |
 | Android SDK Build Tools | Local install | Provides `apksigner` for signature verification. |
 
-### Git auth — SSH setup
+### Git auth — GitHub App
 
-One-time setup. SSH keys do not expire and bypass the Windows credential helper entirely.
+All GitHub access on this machine authenticates as the **worldrunner-agent** GitHub App
+(installed on the PoliteByte org with `contents: write` and `pull_requests: write`).
+There are no personal GitHub credentials or SSH keys on this machine. The setup is
+machine-global and already done — nothing to configure per repo:
+
+- `~/.wr-agent/config.json` + `.pem` hold the app ID and private key.
+- `~/bin/wr-app-token.mjs` mints a short-lived (1 h) installation token.
+- The global git config (`credential.https://github.com.helper=wr-app`) routes every
+  HTTPS git operation through the app, minting a fresh token per call.
+
+**git push/pull/fetch:** just use plain `git push` — the credential helper handles auth
+automatically. The remote must stay HTTPS (`https://github.com/PoliteByte/RhythmWise.git`);
+an SSH remote would bypass the helper and fail.
+
+**`gh` commands:** set a token in the current PowerShell session before running them:
 
 ```powershell
-ssh-keygen -t ed25519 -C "<your-github-email>"
-Get-Content ~/.ssh/id_ed25519.pub | Set-Clipboard
+$env:GH_TOKEN = (node ~/bin/wr-app-token.mjs)
 ```
 
-Add the copied public key at https://github.com/settings/keys → **New SSH key**.
-
-Switch this clone's remote from HTTPS to SSH:
-
-```powershell
-git remote set-url origin git@github.com:PoliteByte/RhythmWise.git
-ssh -T git@github.com
-```
-
-The SSH test should reply `Hi <your-github-username>! You've successfully authenticated...`. On first connection, accept GitHub's host key with `yes`.
+The token expires after 1 hour — if a `gh` command later fails with 401, just run the
+line again. If any git or `gh` operation shows a browser/editor sign-in prompt, it took
+a personal-auth path by mistake — abort and fix the command; never sign in interactively.
 
 ---
 
@@ -281,8 +287,8 @@ R8 stripped a class referenced via reflection. Common culprits: new Room entitie
 **`git describe --tags` returns the wrong tag in Step 4.**
 The command returns the most recent tag reachable from `HEAD`. If you tagged a branch other than `main` recently, run `git describe --tags --abbrev=0 main` to scope to `main`.
 
-**`git push` fails with `403 Permission denied to <user>` even though you have admin on the repo.**
-The HTTPS remote is being authenticated through Windows Credential Manager, and the cached credential is stale or has no scope for the current repo owner (this happens after repo transfers between accounts/orgs). Clearing the credential entry usually doesn't help because the credential helper re-prompts and re-caches the same stale identity. Fix permanently by switching to SSH — see [Git auth — SSH setup](#git-auth--ssh-setup) in the Prerequisites section. Do **not** try to fix this by editing the remote URL or `git config user.*` — neither controls authentication.
+**`git push` fails with `403 Permission denied` or hangs on an auth prompt.**
+Check that the operation is actually going through the app's credential helper: the remote must be HTTPS (`git remote -v` should show `https://github.com/PoliteByte/RhythmWise.git`, not `git@github.com:...`), and `git config --get-all credential.https://github.com.helper` should print `wr-app`. A 403 that persists despite both being correct means the worldrunner-agent app installation lost access to the repo — re-add it under the PoliteByte org's GitHub App settings (Settings → GitHub Apps → worldrunner-agent → Repository access). Do **not** fix auth failures by signing in personally or caching a credential in Windows Credential Manager.
 
 **`gh release create` fails with "release already exists".**
 A draft or published release with that tag already exists. Either delete the existing release (`gh release delete v1.0.0-beta.3`) and retry, or edit it in place: `gh release upload v1.0.0-beta.3 <apk>#<rename>` to add the asset, and `gh release edit v1.0.0-beta.3 --notes-file docs/RELEASE_NOTES.md` to update the notes.

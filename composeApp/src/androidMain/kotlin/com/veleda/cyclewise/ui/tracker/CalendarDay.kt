@@ -261,10 +261,17 @@ internal fun CalendarDayCell(
                     }
                 }
             }
+            // Today ring: inverseSurface guarantees contrast against pastel phase
+            // fills, user-customizable period colors, and heatmap overlays; drawn
+            // in EVERY display mode — it used to vanish whenever heatmap or
+            // phase-border rendering was active (issue #146)
             .border(
-                width = if (isToday && heatmapColor == null && phaseBorderColor == null) dims.xxs else 0.dp,
-                color = if (isToday && heatmapColor == null && phaseBorderColor == null)
-                    MaterialTheme.colorScheme.primary else Color.Transparent,
+                width = if (isToday) dims.xxs else 0.dp,
+                color = if (isToday) {
+                    MaterialTheme.colorScheme.inverseSurface
+                } else {
+                    Color.Transparent
+                },
                 shape = CircleShape
             )
             .clickable(

@@ -332,7 +332,11 @@
     <string name="insights_chart_legend_cd">Chart legend</string>
     <string name="heatmap_intensity_low">Low</string>
     <string name="heatmap_intensity_high">High</string>
-    <string name="heatmap_off">Off</string>
+    <string name="heatmap_off">No heatmap</string>
+    <string name="flow_intensity_light">Light</string>
+    <string name="flow_intensity_medium">Medium</string>
+    <string name="flow_intensity_heavy">Heavy</string>
+    <string name="score_of_five">%1$d of 5</string>
     <string name="heatmap_section_label">Heatmap</string>
     <string name="heatmap_colors_title">Heatmap Colors</string>
     <string name="heatmap_color_mood_label">Mood</string>

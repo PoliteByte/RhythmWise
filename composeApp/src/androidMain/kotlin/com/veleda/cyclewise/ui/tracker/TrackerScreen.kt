@@ -380,35 +380,40 @@ fun TrackerScreen(navController: NavController) {
                 }
             }
 
-            Row(
+            // Box overlay so the Today button is centered on the SCREEN, not in the
+            // space left over by the trailing icons (issue #146)
+            Box(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = dims.md),
-                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Spacer(Modifier.weight(1f))
                 FilledTonalButton(
                     onClick = {
                         coroutineScope.launch {
                             calendarState.animateScrollToMonth(currentMonth)
                         }
-                    }
+                    },
+                    modifier = Modifier.align(Alignment.Center),
                 ) {
                     Text(stringResource(R.string.tracker_today))
                 }
-                Spacer(Modifier.weight(1f))
-                HelpButton(
-                    onClick = { showTrackerHelp = true },
-                    contentDescription = stringResource(
-                        R.string.help_button_cd,
-                        stringResource(R.string.help_tracker_title),
-                    ),
-                )
-                InfoButton(
-                    onClick = { viewModel.onEvent(TrackerEvent.ShowEducationalSheet("CyclePhase")) },
-                    contentDescription = stringResource(
-                        R.string.educational_info_button_cd,
-                        stringResource(R.string.tracker_phase_label),
-                    ),
-                )
+                Row(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    HelpButton(
+                        onClick = { showTrackerHelp = true },
+                        contentDescription = stringResource(
+                            R.string.help_button_cd,
+                            stringResource(R.string.help_tracker_title),
+                        ),
+                    )
+                    InfoButton(
+                        onClick = { viewModel.onEvent(TrackerEvent.ShowEducationalSheet("CyclePhase")) },
+                        contentDescription = stringResource(
+                            R.string.educational_info_button_cd,
+                            stringResource(R.string.tracker_phase_label),
+                        ),
+                    )
+                }
             }
 
             val daysOfWeek = remember(firstDayOfWeek) {

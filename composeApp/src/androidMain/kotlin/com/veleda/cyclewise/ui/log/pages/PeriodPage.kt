@@ -40,6 +40,7 @@ import com.veleda.cyclewise.domain.models.PeriodConsistency
 import com.veleda.cyclewise.ui.coachmark.CoachMarkState
 import com.veleda.cyclewise.ui.coachmark.HintKey
 import com.veleda.cyclewise.ui.coachmark.coachMarkTarget
+import com.veleda.cyclewise.ui.components.flowIntensityLabel
 import com.veleda.cyclewise.ui.log.components.SectionCard
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 
@@ -220,7 +221,7 @@ internal fun FlowIntensitySelector(
                     val newSelection = if (selectedIntensity == intensity) null else intensity
                     onSelectionChanged(newSelection)
                 },
-                label = { Text(intensity.name.replaceFirstChar { it.uppercase() }) }
+                label = { Text(flowIntensityLabel(intensity)) }
             )
         }
     }

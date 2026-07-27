@@ -16,12 +16,19 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Grain
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.SentimentDissatisfied
+import androidx.compose.material.icons.filled.SentimentNeutral
+import androidx.compose.material.icons.filled.SentimentSatisfied
+import androidx.compose.material.icons.filled.SentimentVeryDissatisfied
+import androidx.compose.material.icons.filled.SentimentVerySatisfied
 import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -36,7 +43,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.models.CyclePhase
 import com.veleda.cyclewise.domain.models.FullDailyLog
@@ -45,6 +55,7 @@ import com.veleda.cyclewise.domain.models.Medication
 import com.veleda.cyclewise.domain.models.PeriodColor
 import com.veleda.cyclewise.domain.models.PeriodConsistency
 import com.veleda.cyclewise.domain.models.Symptom
+import com.veleda.cyclewise.ui.components.flowIntensityLabel
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import com.veleda.cyclewise.ui.utils.toLocalizedDateString
 import kotlinx.datetime.LocalDate
@@ -142,7 +153,7 @@ internal fun LogSummarySheetContent(
             InfoCard(
                 icon = Icons.Default.Opacity,
                 title = stringResource(R.string.tracker_flow_label),
-                value = it.name.lowercase().replaceFirstChar { c -> c.uppercase() }
+                value = flowIntensityLabel(it)
             )
         }
 
@@ -177,32 +188,43 @@ internal fun LogSummarySheetContent(
         }
 
         if (showMood) {
-            log.entry.moodScore?.let {
+            log.entry.moodScore?.let { score ->
                 InfoCard(
                     icon = Icons.Default.Mood,
                     title = stringResource(R.string.tracker_mood_label),
-                    value = "$it / 5"
-                )
+                ) {
+                    MoodFaceValue(score = score)
+                }
             }
         }
 
         if (showEnergy) {
-            log.entry.energyLevel?.let {
+            log.entry.energyLevel?.let { score ->
                 InfoCard(
                     icon = Icons.Default.Bolt,
                     title = stringResource(R.string.tracker_energy_label),
-                    value = "$it / 5"
-                )
+                ) {
+                    IconScale(
+                        score = score,
+                        filledIcon = Icons.Default.Bolt,
+                        emptyIcon = Icons.Outlined.Bolt,
+                    )
+                }
             }
         }
 
         if (showLibido) {
-            log.entry.libidoScore?.let {
+            log.entry.libidoScore?.let { score ->
                 InfoCard(
                     icon = Icons.Default.FavoriteBorder,
                     title = stringResource(R.string.tracker_libido_label),
-                    value = "$it / 5"
-                )
+                ) {
+                    IconScale(
+                        score = score,
+                        filledIcon = Icons.Default.Favorite,
+                        emptyIcon = Icons.Default.FavoriteBorder,
+                    )
+                }
             }
         }
 
@@ -324,6 +346,18 @@ private fun <T> ChipRowSection(
  */
 @Composable
 private fun InfoCard(icon: ImageVector, title: String, value: String) {
+    InfoCard(icon = icon, title = title) {
+        Text(text = value, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/**
+ * [InfoCard] variant whose value slot is arbitrary composable [content] —
+ * used for the visual score scales that replaced the bare "n / 5" text
+ * (issue #146).
+ */
+@Composable
+private fun InfoCard(icon: ImageVector, title: String, content: @Composable () -> Unit) {
     val dims = LocalDimensions.current
 
     Card(
@@ -342,7 +376,71 @@ private fun InfoCard(icon: ImageVector, title: String, value: String) {
             Icon(icon, contentDescription = title, tint = MaterialTheme.colorScheme.primary)
             Text(text = "$title:", style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.weight(1f))
-            Text(text = value, style = MaterialTheme.typography.bodyLarge)
+            content()
+        }
+    }
+}
+
+/**
+ * Mood value rendered as an expressive sentiment face plus the numeric score —
+ * beta testers preferred a glanceable face over bare "n / 5" (issue #146).
+ */
+@Composable
+private fun MoodFaceValue(score: Int) {
+    val dims = LocalDimensions.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(dims.xs),
+    ) {
+        Icon(
+            imageVector = moodFace(score),
+            contentDescription = stringResource(R.string.score_of_five, score),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(dims.lg),
+        )
+        Text(text = "$score / 5", style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/** Maps a 1-5 mood score to a sentiment face, clamping out-of-range values. */
+private fun moodFace(score: Int): ImageVector = when {
+    score <= 1 -> Icons.Default.SentimentVeryDissatisfied
+    score == 2 -> Icons.Default.SentimentDissatisfied
+    score == 3 -> Icons.Default.SentimentNeutral
+    score == 4 -> Icons.Default.SentimentSatisfied
+    else -> Icons.Default.SentimentVerySatisfied
+}
+
+/**
+ * Five-step icon scale: the first [score] positions render [filledIcon] in the
+ * primary color, the remainder render [emptyIcon] muted. The row carries a
+ * "N of 5" content description so screen readers announce the value once.
+ */
+@Composable
+private fun IconScale(
+    score: Int,
+    filledIcon: ImageVector,
+    emptyIcon: ImageVector,
+) {
+    val dims = LocalDimensions.current
+    val description = stringResource(R.string.score_of_five, score)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            contentDescription = description
+        },
+    ) {
+        repeat(5) { index ->
+            Icon(
+                imageVector = if (index < score) filledIcon else emptyIcon,
+                contentDescription = null,
+                tint = if (index < score) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                },
+                modifier = Modifier.size(dims.lg),
+            )
         }
     }
 }

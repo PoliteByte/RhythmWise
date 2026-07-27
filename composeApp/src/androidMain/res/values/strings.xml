@@ -36,6 +36,13 @@
     <string name="phase_color_reset_defaults">Reset to Defaults</string>
     <string name="phase_color_hex_hint">Hex (e.g. EF9A9A)</string>
     <string name="phase_color_invalid_hex">Invalid hex code</string>
+    <string name="color_picker_title">Pick a color for %1$s</string>
+    <string name="color_picker_hue">Hue</string>
+    <string name="color_picker_saturation">Saturation</string>
+    <string name="color_picker_brightness">Brightness</string>
+    <string name="color_picker_apply">Apply</string>
+    <string name="color_picker_cancel">Cancel</string>
+    <string name="color_row_edit_cd">Edit %1$s color</string>
 
     <!-- Reminders -->
     <string name="reminder_settings_title">Reminders</string>

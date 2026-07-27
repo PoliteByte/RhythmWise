@@ -15,8 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Bedtime
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.SelfImprovement
@@ -35,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.ui.auth.WaterTrackerCounter
+import com.veleda.cyclewise.ui.components.moodFaceIcon
 import com.veleda.cyclewise.ui.coachmark.CoachMarkState
 import com.veleda.cyclewise.ui.coachmark.HintKey
 import com.veleda.cyclewise.ui.coachmark.coachMarkTarget
@@ -160,6 +164,8 @@ internal fun WellnessPage(
                 onSelectionChanged = onEnergyChanged,
                 contentDescriptionPrefix = stringResource(R.string.energy_section_title),
                 enabled = energyEnabled,
+                filledIcon = Icons.Filled.Bolt,
+                emptyIcon = Icons.Outlined.Bolt,
             )
         }
 
@@ -174,6 +180,8 @@ internal fun WellnessPage(
                 onSelectionChanged = onLibidoChanged,
                 contentDescriptionPrefix = stringResource(R.string.libido_section_title),
                 enabled = libidoEnabled,
+                filledIcon = Icons.Filled.Favorite,
+                emptyIcon = Icons.Outlined.FavoriteBorder,
             )
         }
 
@@ -210,11 +218,13 @@ internal fun WellnessPage(
 }
 
 /**
- * 1-5 star rating selector for mood score.
+ * 1-5 mood selector rendered as five distinct sentiment faces, from very
+ * dissatisfied to very satisfied (beta feedback: identical stars were unclear —
+ * "can we have five faces for mood, ranging from a sad face to very happy?").
  *
- * Renders a row of star icons; filled stars indicate the selected score,
- * outlined stars indicate unselected values. Tapping a star sets that score.
- * Tapping the already-selected star clears the rating back to `null`.
+ * Mood is a discrete choice, not an intensity: only the tapped face highlights
+ * (primary color), the rest stay muted. Tapping the already-selected face
+ * clears the rating back to `null`.
  *
  * @param selectedMood Currently selected mood score (1-5), or `null` if unset.
  * @param onSelectionChanged Callback invoked with the tapped score, or `null` when deselecting.
@@ -235,15 +245,15 @@ internal fun MoodSelector(
                 onClick = { onSelectionChanged(if (score == selectedMood) null else score) },
                 enabled = enabled,
             ) {
-                val icon = if (score <= (selectedMood ?: 0)) Icons.Filled.Star else Icons.Outlined.StarOutlined
                 Icon(
-                    icon,
+                    moodFaceIcon(score),
                     contentDescription = stringResource(R.string.daily_log_mood_score, score),
                     modifier = Modifier.size(LocalDimensions.current.xl),
-                    tint = if (score <= (selectedMood ?: 0))
-                        RhythmWiseColors.StarGold
-                    else
+                    tint = if (score == selectedMood) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
             }
         }
@@ -251,14 +261,20 @@ internal fun MoodSelector(
 }
 
 /**
- * Reusable 1-5 star rating selector for numeric wellness scores (energy, libido).
+ * Reusable 1-5 intensity selector for numeric wellness scores.
  *
- * Tapping the already-selected star clears the rating back to `null`.
+ * Icons fill up to the selected score in the primary color (an intensity
+ * scale, unlike [MoodSelector]'s discrete faces); the callers choose a
+ * category-descriptive glyph pair — bolts for energy, hearts for libido —
+ * instead of the old ambiguous identical stars. Tapping the already-selected
+ * icon clears the rating back to `null`.
  *
  * @param selectedScore Currently selected score (1-5), or null if unset.
  * @param onSelectionChanged Callback invoked with the tapped score, or `null` when deselecting.
  * @param contentDescriptionPrefix Prefix for accessibility labels (e.g., "Energy").
  * @param enabled Whether the selector is interactive. When `false`, taps are ignored.
+ * @param filledIcon Glyph for positions at or below the selected score.
+ * @param emptyIcon  Glyph for positions above the selected score.
  */
 @Composable
 internal fun ScoreSelector(
@@ -266,6 +282,8 @@ internal fun ScoreSelector(
     onSelectionChanged: (Int?) -> Unit,
     contentDescriptionPrefix: String,
     enabled: Boolean = true,
+    filledIcon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Filled.Star,
+    emptyIcon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Outlined.StarOutlined,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -276,15 +294,16 @@ internal fun ScoreSelector(
                 onClick = { onSelectionChanged(if (score == selectedScore) null else score) },
                 enabled = enabled,
             ) {
-                val icon = if (score <= (selectedScore ?: 0)) Icons.Filled.Star else Icons.Outlined.StarOutlined
+                val filled = score <= (selectedScore ?: 0)
                 Icon(
-                    icon,
+                    if (filled) filledIcon else emptyIcon,
                     contentDescription = stringResource(R.string.daily_log_score, contentDescriptionPrefix, score),
                     modifier = Modifier.size(LocalDimensions.current.xl),
-                    tint = if (score <= (selectedScore ?: 0))
-                        RhythmWiseColors.StarGold
-                    else
+                    tint = if (filled) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
             }
         }

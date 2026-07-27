@@ -22,11 +22,6 @@ import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Grain
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.SentimentDissatisfied
-import androidx.compose.material.icons.filled.SentimentNeutral
-import androidx.compose.material.icons.filled.SentimentSatisfied
-import androidx.compose.material.icons.filled.SentimentVeryDissatisfied
-import androidx.compose.material.icons.filled.SentimentVerySatisfied
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material3.Card
@@ -56,6 +51,7 @@ import com.veleda.cyclewise.domain.models.PeriodColor
 import com.veleda.cyclewise.domain.models.PeriodConsistency
 import com.veleda.cyclewise.domain.models.Symptom
 import com.veleda.cyclewise.ui.components.flowIntensityLabel
+import com.veleda.cyclewise.ui.components.moodFaceIcon
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import com.veleda.cyclewise.ui.utils.toLocalizedDateString
 import kotlinx.datetime.LocalDate
@@ -393,22 +389,13 @@ private fun MoodFaceValue(score: Int) {
         horizontalArrangement = Arrangement.spacedBy(dims.xs),
     ) {
         Icon(
-            imageVector = moodFace(score),
+            imageVector = moodFaceIcon(score),
             contentDescription = stringResource(R.string.score_of_five, score),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(dims.lg),
         )
         Text(text = "$score / 5", style = MaterialTheme.typography.bodyLarge)
     }
-}
-
-/** Maps a 1-5 mood score to a sentiment face, clamping out-of-range values. */
-private fun moodFace(score: Int): ImageVector = when {
-    score <= 1 -> Icons.Default.SentimentVeryDissatisfied
-    score == 2 -> Icons.Default.SentimentDissatisfied
-    score == 3 -> Icons.Default.SentimentNeutral
-    score == 4 -> Icons.Default.SentimentSatisfied
-    else -> Icons.Default.SentimentVerySatisfied
 }
 
 /**

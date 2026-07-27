@@ -27,6 +27,25 @@ import com.veleda.cyclewise.domain.usecases.CycleStatus
  * (issue #142) — the tester's most-wanted fact: "what day of period you're on
  * or when your next period will be". Tapping navigates to the Tracker.
  */
+/** Resolves the banner's one-line headline for the given [status]. */
+@Composable
+private fun statusHeadline(status: CycleStatus): String = when (status) {
+    is CycleStatus.OnPeriod ->
+        stringResource(R.string.cycle_status_on_period, status.dayOfPeriod)
+    is CycleStatus.Predicted ->
+        if (status.daysAway > 0) {
+            pluralStringResource(
+                R.plurals.cycle_status_predicted,
+                status.daysAway,
+                status.daysAway,
+            )
+        } else {
+            stringResource(R.string.cycle_status_due)
+        }
+    is CycleStatus.InsufficientData ->
+        stringResource(R.string.cycle_status_no_data)
+}
+
 @Composable
 internal fun CycleStatusBanner(
     status: CycleStatus,
@@ -34,23 +53,7 @@ internal fun CycleStatusBanner(
     modifier: Modifier = Modifier,
 ) {
     val dims = com.veleda.cyclewise.ui.theme.LocalDimensions.current
-
-    val headline = when (status) {
-        is CycleStatus.OnPeriod ->
-            stringResource(R.string.cycle_status_on_period, status.dayOfPeriod)
-        is CycleStatus.Predicted ->
-            if (status.daysAway > 0) {
-                pluralStringResource(
-                    R.plurals.cycle_status_predicted,
-                    status.daysAway,
-                    status.daysAway,
-                )
-            } else {
-                stringResource(R.string.cycle_status_due)
-            }
-        is CycleStatus.InsufficientData ->
-            stringResource(R.string.cycle_status_no_data)
-    }
+    val headline = statusHeadline(status)
 
     Card(
         onClick = onClick,

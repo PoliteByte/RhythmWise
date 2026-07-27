@@ -65,6 +65,7 @@ class InsightsViewModelTest {
         coEvery { mockRepository.getAllLogs() } returns flowOf(emptyList())
         coEvery { mockRepository.getSymptomLibrary() } returns flowOf(emptyList())
         coEvery { mockRepository.getAllWaterIntakes() } returns flowOf(emptyList())
+        io.mockk.every { mockRepository.observeCycleSettings() } returns flowOf(com.veleda.cyclewise.domain.models.CycleSettings())
         coEvery { mockRepository.getMedicationLibrary() } returns flowOf(emptyList())
     }
 

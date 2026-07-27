@@ -129,6 +129,8 @@ data class DailyLogUiState(
  *
  * Session-scoped (destroyed on logout/autolock).
  */
+// One parameter per injected use case/provider — the DI graph is the source of truth
+@Suppress("LongParameterList")
 class DailyLogViewModel(
     private val entryDate: LocalDate,
     private val periodRepository: PeriodRepository,

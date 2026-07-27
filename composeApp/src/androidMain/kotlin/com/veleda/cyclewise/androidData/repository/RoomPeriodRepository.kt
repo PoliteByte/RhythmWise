@@ -75,6 +75,8 @@ import com.veleda.cyclewise.androidData.local.entities.PeriodEntity
  * - [observeDayDetails] combines period ranges and log data into the calendar's source of truth.
  * - [seedDatabaseForDebug] is destructive and generates 6 months of test data.
  */
+// One constructor parameter per DAO — splitting would fragment the repository
+@Suppress("LongParameterList")
 class RoomPeriodRepository(
     private val db: PeriodDatabase,
     private val periodDao: PeriodDao,

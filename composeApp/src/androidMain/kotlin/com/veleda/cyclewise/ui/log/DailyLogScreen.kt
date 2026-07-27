@@ -100,6 +100,8 @@ private const val TAB_ROW_SETTLE_MS = 500L
  * @param onDone Callback invoked when the user taps the "Done" button on any tab page
  *        to return to the Tracker screen.
  */
+// Screen-level composable hosting the pager, walkthrough, and dialogs — cohesive by design
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DailyLogScreen(

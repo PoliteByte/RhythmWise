@@ -70,6 +70,8 @@ internal fun hexToHsv(hex: String): Triple<Float, Float, Float>? {
  * @param onConfirm    Called with the chosen hex on Apply.
  * @param onDismiss    Called on Cancel or outside-tap.
  */
+// Dialog layout: preview + hex + three sliders — cohesive, splitting adds indirection
+@Suppress("LongMethod")
 @Composable
 internal fun ColorPickerDialog(
     label: String,

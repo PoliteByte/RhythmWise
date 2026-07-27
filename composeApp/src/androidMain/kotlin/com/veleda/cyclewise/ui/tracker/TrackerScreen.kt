@@ -29,7 +29,6 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.ui.platform.LocalContext
 import kotlinx.datetime.daysUntil
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -253,7 +252,10 @@ fun TrackerScreen(navController: NavController) {
 
     var showSuccess by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
+    // Resolved during composition; the effect collector formats the count in
+    // (avoids resource lookups through a captured Context - lint requirement)
+    val autofillMessagePattern = stringResource(R.string.period_autofill_snackbar)
+    val autofillUndoLabel = stringResource(R.string.period_autofill_undo)
     var emptyOverlayDismissed by remember { mutableStateOf(false) }
     var showTrackerHelp by remember { mutableStateOf(false) }
 
@@ -283,8 +285,8 @@ fun TrackerScreen(navController: NavController) {
                     // Undo snackbar for the auto-filled range (issue #144)
                     val filledDays = effect.startDate.daysUntil(effect.endDate) + 1
                     val result = snackbarHostState.showSnackbar(
-                        message = context.getString(R.string.period_autofill_snackbar, filledDays),
-                        actionLabel = context.getString(R.string.period_autofill_undo),
+                        message = autofillMessagePattern.format(filledDays),
+                        actionLabel = autofillUndoLabel,
                         duration = SnackbarDuration.Long,
                     )
                     if (result == SnackbarResult.ActionPerformed) {

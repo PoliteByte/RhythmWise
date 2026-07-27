@@ -333,6 +333,8 @@
     <string name="heatmap_intensity_low">Low</string>
     <string name="heatmap_intensity_high">High</string>
     <string name="heatmap_off">No heatmap</string>
+    <string name="educational_expand_cd">Expand %1$s</string>
+    <string name="educational_collapse_cd">Collapse %1$s</string>
     <string name="flow_intensity_light">Light</string>
     <string name="flow_intensity_medium">Medium</string>
     <string name="flow_intensity_heavy">Heavy</string>

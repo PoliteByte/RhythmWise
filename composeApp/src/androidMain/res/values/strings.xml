@@ -72,6 +72,7 @@
     <string name="tracker_empty_close_cd">Dismiss</string>
     <string name="period_autofill_snackbar">Marked %1$d days — drag to adjust</string>
     <string name="period_autofill_undo">Undo</string>
+    <string name="wellness_score_of_five">%1$d/5</string>
     <string name="cycle_status_on_period">Day %1$d of your period</string>
     <plurals name="cycle_status_predicted">
         <item quantity="one">Period expected tomorrow</item>

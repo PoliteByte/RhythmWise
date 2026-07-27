@@ -135,6 +135,7 @@ internal fun WellnessPage(
             title = stringResource(R.string.daily_log_mood_title),
             icon = Icons.Outlined.SelfImprovement,
             onInfoClick = { onShowEducationalSheet("Mood") },
+            valueLabel = moodScore?.let { stringResource(R.string.wellness_score_of_five, it) },
             modifier = (if (coachMarkState != null) {
                 Modifier.coachMarkTarget(HintKey.DAILY_LOG_MOOD, coachMarkState)
             } else {
@@ -152,6 +153,7 @@ internal fun WellnessPage(
             title = stringResource(R.string.energy_section_title),
             icon = Icons.Outlined.Bedtime,
             onInfoClick = { onShowEducationalSheet("Energy") },
+            valueLabel = energyLevel?.let { stringResource(R.string.wellness_score_of_five, it) },
             modifier = (if (coachMarkState != null) {
                 Modifier.coachMarkTarget(HintKey.DAILY_LOG_ENERGY, coachMarkState)
             } else {
@@ -172,6 +174,7 @@ internal fun WellnessPage(
             title = stringResource(R.string.libido_section_title),
             icon = Icons.Outlined.FavoriteBorder,
             onInfoClick = { onShowEducationalSheet("Libido") },
+            valueLabel = libidoScore?.let { stringResource(R.string.wellness_score_of_five, it) },
             modifier = Modifier.alpha(if (libidoEnabled) 1f else 0.38f),
         ) {
             ScoreSelector(
@@ -221,9 +224,9 @@ internal fun WellnessPage(
  * dissatisfied to very satisfied (beta feedback: identical stars were unclear —
  * "can we have five faces for mood, ranging from a sad face to very happy?").
  *
- * Mood is a discrete choice, not an intensity: only the tapped face highlights
- * (primary color), the rest stay muted. Tapping the already-selected face
- * clears the rating back to `null`.
+ * Mood is a discrete choice: the tapped face highlights in the primary color
+ * while the others fade out (sadder faces never light up under a happier
+ * rating). Tapping the already-selected face clears the rating back to `null`.
  *
  * @param selectedMood Currently selected mood score (1-5), or `null` if unset.
  * @param onSelectionChanged Callback invoked with the tapped score, or `null` when deselecting.
@@ -247,7 +250,9 @@ internal fun MoodSelector(
                 Icon(
                     moodFaceIcon(score),
                     contentDescription = stringResource(R.string.daily_log_mood_score, score),
-                    modifier = Modifier.size(LocalDimensions.current.xl),
+                    modifier = Modifier
+                        .size(LocalDimensions.current.xl)
+                        .alpha(unselectedIconAlpha(score, selectedMood)),
                     tint = if (score == selectedMood) {
                         MaterialTheme.colorScheme.primary
                     } else {
@@ -260,10 +265,11 @@ internal fun MoodSelector(
 }
 
 /**
- * Reusable 1-5 intensity selector for numeric wellness scores.
+ * Reusable 1-5 selector for numeric wellness scores.
  *
- * Icons fill up to the selected score in the primary color (an intensity
- * scale, unlike [MoodSelector]'s discrete faces); the callers choose a
+ * Single-selection model: only the tapped icon renders filled in the primary
+ * color at full opacity; the rest fade out (the card label carries the "N/5"
+ * readout, so a fill-up scale is redundant). Callers choose a
  * category-descriptive glyph pair — bolts for energy, hearts for libido —
  * instead of the old ambiguous identical stars. Tapping the already-selected
  * icon clears the rating back to `null`.
@@ -272,8 +278,8 @@ internal fun MoodSelector(
  * @param onSelectionChanged Callback invoked with the tapped score, or `null` when deselecting.
  * @param contentDescriptionPrefix Prefix for accessibility labels (e.g., "Energy").
  * @param enabled Whether the selector is interactive. When `false`, taps are ignored.
- * @param filledIcon Glyph for positions at or below the selected score.
- * @param emptyIcon  Glyph for positions above the selected score.
+ * @param filledIcon Glyph for the selected position.
+ * @param emptyIcon  Glyph for non-selected positions.
  */
 @Composable
 internal fun ScoreSelector(
@@ -293,12 +299,14 @@ internal fun ScoreSelector(
                 onClick = { onSelectionChanged(if (score == selectedScore) null else score) },
                 enabled = enabled,
             ) {
-                val filled = score <= (selectedScore ?: 0)
+                val isSelected = score == selectedScore
                 Icon(
-                    if (filled) filledIcon else emptyIcon,
+                    if (isSelected) filledIcon else emptyIcon,
                     contentDescription = stringResource(R.string.daily_log_score, contentDescriptionPrefix, score),
-                    modifier = Modifier.size(LocalDimensions.current.xl),
-                    tint = if (filled) {
+                    modifier = Modifier
+                        .size(LocalDimensions.current.xl)
+                        .alpha(unselectedIconAlpha(score, selectedScore)),
+                    tint = if (isSelected) {
                         MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -307,4 +315,17 @@ internal fun ScoreSelector(
             }
         }
     }
+}
+
+/** Alpha for non-selected score icons while a selection exists — the chosen icon stands alone. */
+private const val UNSELECTED_ICON_ALPHA = 0.35f
+
+/**
+ * Fades every icon except the selected one once a selection exists; with no
+ * selection all icons render at full alpha so the control stays discoverable.
+ */
+private fun unselectedIconAlpha(score: Int, selectedScore: Int?): Float = when {
+    selectedScore == null -> 1f
+    score == selectedScore -> 1f
+    else -> UNSELECTED_ICON_ALPHA
 }

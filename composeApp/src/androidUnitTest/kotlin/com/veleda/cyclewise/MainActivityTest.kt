@@ -1,0 +1,60 @@
+package com.veleda.cyclewise
+
+import android.content.pm.ApplicationInfo
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+/**
+ * Tests for [shouldApplySecureFlag] — the release-only gate for
+ * `FLAG_SECURE` screenshot protection on the main window.
+ */
+@RunWith(RobolectricTestRunner::class)
+class MainActivityTest {
+
+    @Test
+    fun `given non-debuggable build when deciding secure flag then it is applied`() {
+        // Given an ApplicationInfo without the debuggable bit (release build)
+        val releaseInfo = ApplicationInfo().apply {
+            flags = 0
+        }
+
+        // When deciding whether to secure the window
+        val applied = shouldApplySecureFlag(releaseInfo)
+
+        // Then the flag is applied
+        assertTrue(applied)
+    }
+
+    @Test
+    fun `given debuggable build when deciding secure flag then it is skipped`() {
+        // Given an ApplicationInfo with the debuggable bit set (debug build)
+        val debugInfo = ApplicationInfo().apply {
+            flags = ApplicationInfo.FLAG_DEBUGGABLE
+        }
+
+        // When deciding whether to secure the window
+        val applied = shouldApplySecureFlag(debugInfo)
+
+        // Then the flag is skipped so screen capture works for QA
+        assertFalse(applied)
+    }
+
+    @Test
+    fun `given debuggable bit among other flags when deciding secure flag then it is skipped`() {
+        // Given a realistic ApplicationInfo carrying several flags at once
+        val debugInfo = ApplicationInfo().apply {
+            flags = ApplicationInfo.FLAG_DEBUGGABLE or
+                ApplicationInfo.FLAG_ALLOW_BACKUP or
+                ApplicationInfo.FLAG_HAS_CODE
+        }
+
+        // When deciding whether to secure the window
+        val applied = shouldApplySecureFlag(debugInfo)
+
+        // Then the debuggable bit alone controls the decision
+        assertFalse(applied)
+    }
+}

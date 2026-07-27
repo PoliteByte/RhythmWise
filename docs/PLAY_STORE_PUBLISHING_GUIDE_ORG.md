@@ -385,23 +385,20 @@ Upload this PNG in the **Store listing > Graphics** section of Play Console.
 
 All specifications are in **`docs/SCREENSHOT_PLAN.md`**.
 
-### Critical: FLAG_SECURE Blocks Screenshots
+### FLAG_SECURE and Screenshots
 
-`MainActivity.kt` lines 31-34 set `FLAG_SECURE` on the activity window, which
-blocks all screenshot capture (system screenshots, `adb`, and screen recording).
+`MainActivity.kt` sets `FLAG_SECURE` on the activity window for non-debuggable
+builds, which blocks all screenshot capture (system screenshots, `adb`, and
+screen recording) on anything distributable.
 
-**Before capturing screenshots, temporarily comment out the flag:**
+**To capture screenshots, simply run a debug build** (`assembleDebug`) — debug
+builds skip the flag automatically. No code edit is needed, and there is nothing
+to remember to revert.
 
-```kotlin
-// window.setFlags(
-//     WindowManager.LayoutParams.FLAG_SECURE,
-//     WindowManager.LayoutParams.FLAG_SECURE
-// )
-```
-
-Build and run a debug variant for the screenshot session. **Re-enable
-FLAG_SECURE immediately afterward.** Do not commit the change or ship a build
-without it.
+> Emulator note: if `adb screencap` returns black frames even on a debug build,
+> restart the emulator with software rendering: `emulator -avd <name> -gpu
+> swiftshader_indirect`. The default host-GPU pipeline on some machines doesn't
+> expose composited frames to screencap at all.
 
 ### Screenshots (8 Total)
 
@@ -735,9 +732,10 @@ the release build on a physical device before uploading.
 
 ### 2. FLAG_SECURE Blocks Screenshot Capture
 
-`MainActivity.kt` lines 31-34 set `FLAG_SECURE`, which blocks all screenshot
-and screen recording tools. You must temporarily disable it for the screenshot
-capture session. Do not forget to re-enable it before building the upload AAB.
+`MainActivity.kt` sets `FLAG_SECURE` on non-debuggable builds, which blocks all
+screenshot and screen recording tools on anything distributable. Use a debug
+build for screenshot capture sessions — it skips the flag automatically, and
+the upload AAB keeps the protection with no manual code edits.
 
 ### 3. Upload Key vs App Signing Key Confusion
 

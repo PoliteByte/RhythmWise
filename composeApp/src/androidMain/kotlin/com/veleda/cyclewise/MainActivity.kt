@@ -1,5 +1,6 @@
 package com.veleda.cyclewise
 
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
@@ -16,7 +17,10 @@ import com.veleda.cyclewise.ui.CycleWiseAppUI
  *
  * Configures three security/UX concerns before setting the Compose content:
  * - **FLAG_SECURE** — prevents screenshots and the recent-apps thumbnail from
- *   exposing sensitive health data.
+ *   exposing sensitive health data. Applied only to non-debuggable (release)
+ *   builds so that emulator-based UI verification and Play Store screenshot
+ *   sessions can capture the screen from a debug build; every distributed
+ *   build keeps the protection.
  * - **Global crash handler** — logs uncaught exceptions via [Log.e] so crash
  *   details are available in logcat without a remote crash-reporting service.
  * - **Splash screen** — integrates the AndroidX SplashScreen API for a seamless
@@ -28,10 +32,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
+        if (shouldApplySecureFlag(applicationInfo)) {
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE
+            )
+        }
 
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             Log.e("GlobalCrashHandler", "Uncaught exception in ${thread.name}: ${throwable.message}")
@@ -42,6 +48,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+/**
+ * Decides whether [WindowManager.LayoutParams.FLAG_SECURE] should be applied to
+ * the activity window.
+ *
+ * Returns `true` for non-debuggable (release) builds, which must block
+ * screenshots, screen recording, and recent-apps thumbnails to protect health
+ * data. Returns `false` for debuggable builds so emulator-driven UI
+ * verification and Play Store screenshot sessions can capture the screen —
+ * debuggable builds are never distributed (Google Play rejects them).
+ *
+ * @param applicationInfo the running app's [ApplicationInfo], whose
+ *   [ApplicationInfo.FLAG_DEBUGGABLE] bit identifies debug builds.
+ */
+internal fun shouldApplySecureFlag(applicationInfo: ApplicationInfo): Boolean =
+    (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) == 0
 
 @Preview
 @Composable

@@ -17,9 +17,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
  * very happy").
  */
 fun moodFaceIcon(score: Int): ImageVector = when {
-    score <= 1 -> Icons.Default.SentimentVeryDissatisfied
-    score == 2 -> Icons.Default.SentimentDissatisfied
-    score == 3 -> Icons.Default.SentimentNeutral
-    score == 4 -> Icons.Default.SentimentSatisfied
+    score <= MOOD_VERY_DISSATISFIED -> Icons.Default.SentimentVeryDissatisfied
+    score == MOOD_DISSATISFIED -> Icons.Default.SentimentDissatisfied
+    score == MOOD_NEUTRAL -> Icons.Default.SentimentNeutral
+    score == MOOD_SATISFIED -> Icons.Default.SentimentSatisfied
     else -> Icons.Default.SentimentVerySatisfied
 }
+
+private const val MOOD_VERY_DISSATISFIED = 1
+private const val MOOD_DISSATISFIED = 2
+private const val MOOD_NEUTRAL = 3
+private const val MOOD_SATISFIED = 4

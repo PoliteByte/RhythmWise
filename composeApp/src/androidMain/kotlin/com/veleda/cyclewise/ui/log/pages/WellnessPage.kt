@@ -44,7 +44,6 @@ import com.veleda.cyclewise.ui.coachmark.HintKey
 import com.veleda.cyclewise.ui.coachmark.coachMarkTarget
 import com.veleda.cyclewise.ui.log.components.SectionCard
 import com.veleda.cyclewise.ui.theme.LocalDimensions
-import com.veleda.cyclewise.ui.theme.RhythmWiseColors
 
 /**
  * Daily log page for mood, energy, libido, and water intake.

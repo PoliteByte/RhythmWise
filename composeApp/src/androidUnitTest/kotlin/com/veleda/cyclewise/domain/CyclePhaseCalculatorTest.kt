@@ -21,7 +21,7 @@ class CyclePhaseCalculatorTest {
         val date = TestData.DATE
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(date, emptyList(), 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(date, emptyList(), 28.0, 5)
 
         // ASSERT
         assertNull(result)
@@ -35,7 +35,7 @@ class CyclePhaseCalculatorTest {
         val dateBefore = LocalDate(2025, 2, 20)
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(dateBefore, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(dateBefore, periods, 28.0, 5)
 
         // ASSERT
         assertNull(result)
@@ -55,7 +55,7 @@ class CyclePhaseCalculatorTest {
         val dateInPeriod = LocalDate(2025, 3, 3) // Day 3 of first period
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(dateInPeriod, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(dateInPeriod, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.MENSTRUATION, result)
@@ -71,7 +71,7 @@ class CyclePhaseCalculatorTest {
         )
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(periodStart, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(periodStart, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.MENSTRUATION, result)
@@ -87,7 +87,7 @@ class CyclePhaseCalculatorTest {
         )
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(periodEnd, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(periodEnd, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.MENSTRUATION, result)
@@ -105,7 +105,7 @@ class CyclePhaseCalculatorTest {
         val follicularDate = LocalDate(2025, 3, 8) // Day 8 of cycle
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(follicularDate, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(follicularDate, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.FOLLICULAR, result)
@@ -122,7 +122,7 @@ class CyclePhaseCalculatorTest {
         val ovulationDate = LocalDate(2025, 3, 13) // Day 13 of 28-day cycle
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(ovulationDate, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(ovulationDate, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.OVULATION, result)
@@ -139,7 +139,7 @@ class CyclePhaseCalculatorTest {
         val lutealDate = LocalDate(2025, 3, 20) // Day 20 of 28-day cycle
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(lutealDate, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(lutealDate, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.LUTEAL, result)
@@ -159,21 +159,21 @@ class CyclePhaseCalculatorTest {
 
         // ACT & ASSERT — Check each phase boundary
         // Day 1 (Mar 1) = MENSTRUATION
-        assertEquals(CyclePhase.MENSTRUATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 1), periods, 28.0))
+        assertEquals(CyclePhase.MENSTRUATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 1), periods, 28.0, 5))
         // Day 5 (Mar 5) = MENSTRUATION (last period day)
-        assertEquals(CyclePhase.MENSTRUATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 5), periods, 28.0))
+        assertEquals(CyclePhase.MENSTRUATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 5), periods, 28.0, 5))
         // Day 6 (Mar 6) = FOLLICULAR (first post-period day)
-        assertEquals(CyclePhase.FOLLICULAR, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 6), periods, 28.0))
+        assertEquals(CyclePhase.FOLLICULAR, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 6), periods, 28.0, 5))
         // Day 11 (Mar 11) = FOLLICULAR (last follicular day)
-        assertEquals(CyclePhase.FOLLICULAR, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 11), periods, 28.0))
+        assertEquals(CyclePhase.FOLLICULAR, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 11), periods, 28.0, 5))
         // Day 12 (Mar 12) = OVULATION (first ovulation day)
-        assertEquals(CyclePhase.OVULATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 12), periods, 28.0))
+        assertEquals(CyclePhase.OVULATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 12), periods, 28.0, 5))
         // Day 14 (Mar 14) = OVULATION (last ovulation day)
-        assertEquals(CyclePhase.OVULATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 14), periods, 28.0))
+        assertEquals(CyclePhase.OVULATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 14), periods, 28.0, 5))
         // Day 15 (Mar 15) = LUTEAL (first luteal day)
-        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 15), periods, 28.0))
+        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 15), periods, 28.0, 5))
         // Day 28 (Mar 28) = LUTEAL (last day of cycle)
-        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 28), periods, 28.0))
+        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 28), periods, 28.0, 5))
     }
 
     @Test
@@ -189,7 +189,7 @@ class CyclePhaseCalculatorTest {
         val follicularDate = LocalDate(2025, 3, 8) // Day 8
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(follicularDate, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(follicularDate, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.FOLLICULAR, result)
@@ -204,25 +204,48 @@ class CyclePhaseCalculatorTest {
         val lutealDate = LocalDate(2025, 3, 20) // Day 20 of predicted 28-day cycle
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(lutealDate, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(lutealDate, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.LUTEAL, result)
     }
 
     @Test
-    fun calculatePhase_WHEN_nullAverageAndPastLastPeriod_THEN_returnsNull() {
-        // ARRANGE — Single completed period, no average available, date after period ends
+    fun calculatePhase_WHEN_ongoingPeriodBeyondAssumedLength_THEN_returnsFollicular() {
+        // ARRANGE — the #145 repro: an ongoing period (day-1-only logger never
+        // sets an end date) used to paint EVERY later day as menstruation.
+        // With an assumed 5-day period, day 10 of a 28-day cycle is follicular.
+        val periods = listOf(
+            buildPeriod(startDate = LocalDate(2025, 3, 1), endDate = null)
+        )
+
+        // ACT / ASSERT — within the assumed length: menstruation
+        assertEquals(
+            CyclePhase.MENSTRUATION,
+            CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 5), periods, 28.0, 5),
+        )
+        // Beyond it: follicular, never endless red
+        assertEquals(
+            CyclePhase.FOLLICULAR,
+            CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 10), periods, 28.0, 5),
+        )
+    }
+
+    @Test
+    fun calculatePhase_WHEN_singlePeriodAndResolvedLength_THEN_classifiesCurrentCycle() {
+        // ARRANGE — a single completed period; pre-#143 this returned null (no
+        // derivable average). The resolved length now classifies the current
+        // cycle from day one: Mar 10 is day 10 of a 28-day cycle → follicular.
         val periods = listOf(
             buildPeriod(startDate = LocalDate(2025, 3, 1), endDate = LocalDate(2025, 3, 5))
         )
         val dateAfter = LocalDate(2025, 3, 10)
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(dateAfter, periods, null)
+        val result = CyclePhaseCalculator.calculatePhase(dateAfter, periods, 28.0, 5)
 
         // ASSERT
-        assertNull(result)
+        assertEquals(CyclePhase.FOLLICULAR, result)
     }
 
     @Test
@@ -236,15 +259,15 @@ class CyclePhaseCalculatorTest {
         )
 
         // Day 4 (Mar 4) = MENSTRUATION
-        assertEquals(CyclePhase.MENSTRUATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 4), periods, null))
+        assertEquals(CyclePhase.MENSTRUATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 4), periods, 28.0, 5))
         // Day 5 (Mar 5) = OVULATION (ovulation window starts immediately after period)
-        assertEquals(CyclePhase.OVULATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 5), periods, null))
+        assertEquals(CyclePhase.OVULATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 5), periods, 28.0, 5))
         // Day 7 (Mar 7) = OVULATION
-        assertEquals(CyclePhase.OVULATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 7), periods, null))
+        assertEquals(CyclePhase.OVULATION, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 7), periods, 28.0, 5))
         // Day 8 (Mar 8) = LUTEAL
-        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 8), periods, null))
+        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 8), periods, 28.0, 5))
         // Day 21 (Mar 21) = LUTEAL
-        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 21), periods, null))
+        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 21), periods, 28.0, 5))
     }
 
     @Test
@@ -256,7 +279,7 @@ class CyclePhaseCalculatorTest {
         val dateWayAfter = LocalDate(2025, 3, 31) // Day 31, past the 28-day cycle
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(dateWayAfter, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(dateWayAfter, periods, 28.0, 5)
 
         // ASSERT
         assertNull(result)
@@ -271,7 +294,7 @@ class CyclePhaseCalculatorTest {
         val dateInOngoing = LocalDate(2025, 3, 3)
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(dateInOngoing, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(dateInOngoing, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.MENSTRUATION, result)
@@ -287,7 +310,7 @@ class CyclePhaseCalculatorTest {
         val follicularDate = LocalDate(2025, 3, 8) // Day 8 of first cycle
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(follicularDate, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(follicularDate, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.FOLLICULAR, result)
@@ -303,7 +326,7 @@ class CyclePhaseCalculatorTest {
         val dayAfterPeriod = LocalDate(2025, 3, 6) // Day 6, first post-period day
 
         // ACT
-        val result = CyclePhaseCalculator.calculatePhase(dayAfterPeriod, periods, 28.0)
+        val result = CyclePhaseCalculator.calculatePhase(dayAfterPeriod, periods, 28.0, 5)
 
         // ASSERT
         assertEquals(CyclePhase.FOLLICULAR, result)
@@ -322,10 +345,10 @@ class CyclePhaseCalculatorTest {
         )
 
         // ACT & ASSERT — days 25-28 should all be LUTEAL
-        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 25), periods, 28.0))
-        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 26), periods, 28.0))
-        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 27), periods, 28.0))
-        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 28), periods, 28.0))
+        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 25), periods, 28.0, 5))
+        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 26), periods, 28.0, 5))
+        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 27), periods, 28.0, 5))
+        assertEquals(CyclePhase.LUTEAL, CyclePhaseCalculator.calculatePhase(LocalDate(2025, 3, 28), periods, 28.0, 5))
     }
 
     // ==================== averageCycleLength tests ====================

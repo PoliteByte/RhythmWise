@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.*
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import com.veleda.cyclewise.domain.CycleLengthResolver
 import com.veleda.cyclewise.domain.CyclePhaseCalculator
 import com.veleda.cyclewise.domain.models.CyclePhase
 import com.veleda.cyclewise.domain.models.DayDetails
@@ -447,14 +448,25 @@ class RoomPeriodRepository(
     override fun observeDayDetails(): Flow<Map<LocalDate, DayDetails>> {
         return combine(
             getAllPeriods(),
-            getAllLogs()
-        ) { cycles, allLogs ->
+            getAllLogs(),
+            observeCycleSettings()
+        ) { cycles, allLogs, cycleSettings ->
             val detailsMap = mutableMapOf<LocalDate, DayDetails>()
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            val avgCycleLength = CyclePhaseCalculator.averageCycleLength(cycles)
+            // Resolved lengths (issues #143/#145): phases render from the first
+            // logged period instead of after two completed cycles
+            val cycleLength = CycleLengthResolver
+                .resolve(cycles, cycleSettings.typicalCycleLengthDays).days
+            val assumedPeriodLength = PeriodLengthResolver
+                .resolve(cycles, cycleSettings.defaultPeriodLengthDays)
 
             for (cycle in cycles) {
-                val endDate = cycle.endDate ?: today
+                // Ongoing periods paint at most the assumed period length — not
+                // every day through today (issue #145's "never follicular" bug)
+                val endDate = cycle.endDate ?: minOf(
+                    today,
+                    cycle.startDate.plus(assumedPeriodLength - 1, DateTimeUnit.DAY),
+                )
                 var currentDate = cycle.startDate
 
                 while (currentDate <= endDate) {
@@ -470,7 +482,7 @@ class RoomPeriodRepository(
                 val date = log.entry.entryDate
                 val existingInfo = detailsMap[date] ?: DayDetails()
                 val phase = existingInfo.cyclePhase
-                    ?: CyclePhaseCalculator.calculatePhase(date, cycles, avgCycleLength)
+                    ?: CyclePhaseCalculator.calculatePhase(date, cycles, cycleLength, assumedPeriodLength)
                 detailsMap[date] = existingInfo.copy(
                     isPeriodDay = existingInfo.isPeriodDay || log.periodLog != null,
                     hasLoggedSymptoms = log.symptomLogs.isNotEmpty(),
@@ -486,7 +498,9 @@ class RoomPeriodRepository(
                 var fillDate = earliest
                 while (fillDate <= today) {
                     if (fillDate !in detailsMap) {
-                        val phase = CyclePhaseCalculator.calculatePhase(fillDate, cycles, avgCycleLength)
+                        val phase = CyclePhaseCalculator.calculatePhase(
+                            fillDate, cycles, cycleLength, assumedPeriodLength
+                        )
                         if (phase != null) {
                             detailsMap[fillDate] = DayDetails(cyclePhase = phase)
                         }

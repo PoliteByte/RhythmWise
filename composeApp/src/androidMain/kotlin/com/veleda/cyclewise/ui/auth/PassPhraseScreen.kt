@@ -223,7 +223,7 @@ internal fun UnlockScreen(
                 enter = fadeIn() + scaleIn(initialScale = 0.8f)
             ) {
                 Image(
-                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    painter = painterResource(R.drawable.logo_rhythmwise),
                     contentDescription = stringResource(R.string.passphrase_logo_description),
                     modifier = Modifier.size(dims.iconXl)
                 )

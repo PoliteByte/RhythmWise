@@ -27,6 +27,7 @@ import androidx.annotation.RawRes
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,24 +51,31 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.domain.CycleLengthResolver
+import com.veleda.cyclewise.domain.models.CycleSettings
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.PagerSoundEffect
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.components.ContentContainer
 import com.veleda.cyclewise.ui.components.LottieAnimationBox
 import com.veleda.cyclewise.ui.components.MarkdownText
 import com.veleda.cyclewise.ui.components.MedicalDisclaimer
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /** Total number of pages in the onboarding pager. */
-private const val SETUP_PAGE_COUNT = 4
+private const val SETUP_PAGE_COUNT = 5
 
 /**
  * First-time onboarding screen shown when [PassphraseUiState.isFirstTime] is `true`.
  *
- * Contains a [HorizontalPager] with 4 pages:
+ * Contains a [HorizontalPager] with 5 pages:
  * 1. Privacy explanation ("Your Data Stays on This Device")
  * 2. Passphrase guidance ("Choosing a Passphrase You Will Remember")
  * 3. No-recovery warning ("No Recovery, No Exceptions")
- * 4. Passphrase creation form with validation
+ * 4. Cycle questions — period length and typical cycle length, both skippable (issue #143)
+ * 5. Passphrase creation form with validation
  *
  * Navigation between pages is handled by Next/Back buttons and swipe gestures.
  * A page indicator (dots) shows the current position.
@@ -81,8 +89,12 @@ fun SetupScreen(
     onEvent: (PassphraseEvent) -> Unit,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     val pagerState = rememberPagerState(pageCount = { SETUP_PAGE_COUNT })
     val coroutineScope = rememberCoroutineScope()
+
+    // Whoosh once per settled page change (swipes and button-driven scrolls alike)
+    PagerSoundEffect(pagerState)
 
     // Predictive back: navigate to the previous pager page instead of exiting the app.
     // Disabled on page 0 so the system handles back normally (minimize/exit).
@@ -143,7 +155,12 @@ fun SetupScreen(
                         illustrationResId = R.raw.anim_onboarding_tracking,
                         illustrationContentDescription = stringResource(R.string.lottie_cd_onboarding_tracking),
                     )
-                    3 -> CreatePassphrasePage(
+                    3 -> CycleQuestionsPage(
+                        pendingPeriodDays = uiState.pendingDefaultPeriodLength,
+                        pendingCycleDays = uiState.pendingTypicalCycleLength,
+                        onEvent = onEvent,
+                    )
+                    4 -> CreatePassphrasePage(
                         uiState = uiState,
                         onEvent = onEvent,
                     )
@@ -162,6 +179,7 @@ fun SetupScreen(
                 if (pagerState.currentPage > 0) {
                     TextButton(
                         onClick = {
+                            sounds.play(SoundEffect.TAP_LIGHT)
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(pagerState.currentPage - 1)
                             }
@@ -178,6 +196,7 @@ fun SetupScreen(
                 if (pagerState.currentPage < SETUP_PAGE_COUNT - 1) {
                     Button(
                         onClick = {
+                            sounds.play(SoundEffect.TAP)
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(pagerState.currentPage + 1)
                             }
@@ -305,7 +324,133 @@ private fun InfoPage(
 }
 
 /**
- * Passphrase creation form (page 4 of the onboarding flow).
+ * Optional cycle questions (page 4 of the onboarding flow, issue #143).
+ *
+ * Two skippable sliders, easiest question first: **period length** (how many
+ * days of bleeding — the number most users actually know) drives one-tap
+ * period auto-fill (issue #144); **typical cycle length** seeds predictions
+ * and phase coloring until logged history takes over. Answers persist to the
+ * encrypted database only after the first unlock succeeds and can be changed
+ * any time in Settings. Skipping either is a first-class choice.
+ *
+ * @param pendingPeriodDays the period-length answer, or null when skipped/unset.
+ * @param pendingCycleDays  the cycle-length answer, or null when skipped/unset.
+ * @param onEvent           callback to dispatch the two answer events.
+ */
+@Composable
+private fun CycleQuestionsPage(
+    pendingPeriodDays: Int?,
+    pendingCycleDays: Int?,
+    onEvent: (PassphraseEvent) -> Unit,
+) {
+    val dims = LocalDimensions.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = dims.md),
+    ) {
+        Text(
+            text = stringResource(R.string.setup_period_length_title),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Spacer(Modifier.height(dims.sm))
+        MarkdownText(
+            text = stringResource(R.string.setup_period_length_body),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(dims.md))
+        QuestionSlider(
+            pendingDays = pendingPeriodDays,
+            unsetTextRes = R.string.setup_period_length_unset,
+            defaultDays = CycleSettings.DEFAULT_PERIOD_LENGTH_DAYS,
+            range = CycleSettings.MIN_PERIOD_LENGTH_DAYS..CycleSettings.MAX_PERIOD_LENGTH_DAYS,
+            testTagPrefix = "period-length",
+            onChanged = { onEvent(PassphraseEvent.DefaultPeriodLengthChanged(it)) },
+        )
+
+        Spacer(Modifier.height(dims.lg))
+
+        Text(
+            text = stringResource(R.string.setup_cycle_length_title),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Spacer(Modifier.height(dims.sm))
+        MarkdownText(
+            text = stringResource(R.string.setup_cycle_length_body),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(dims.md))
+        QuestionSlider(
+            pendingDays = pendingCycleDays,
+            unsetTextRes = R.string.setup_cycle_length_unset,
+            defaultDays = CycleLengthResolver.DEFAULT_CYCLE_LENGTH_DAYS,
+            range = CycleSettings.MIN_CYCLE_LENGTH_DAYS..CycleSettings.MAX_CYCLE_LENGTH_DAYS,
+            testTagPrefix = "cycle-length",
+            onChanged = { onEvent(PassphraseEvent.TypicalCycleLengthChanged(it)) },
+        )
+    }
+}
+
+/**
+ * One skippable day-count question: current value (or the unset explanation),
+ * a stepped slider, and a "Skip for now" clear button once a value is set.
+ */
+@Composable
+private fun QuestionSlider(
+    pendingDays: Int?,
+    @androidx.annotation.StringRes unsetTextRes: Int,
+    defaultDays: Int,
+    range: IntRange,
+    testTagPrefix: String,
+    onChanged: (Int?) -> Unit,
+) {
+    val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = if (pendingDays != null) {
+                stringResource(R.string.setup_cycle_length_days, pendingDays)
+            } else {
+                stringResource(unsetTextRes)
+            },
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .testTag("$testTagPrefix-value"),
+        )
+        Spacer(Modifier.height(dims.sm))
+        Slider(
+            value = (pendingDays ?: defaultDays).toFloat(),
+            onValueChange = {
+                val days = it.roundToInt()
+                // Tick only when the drag crosses into a new step, not on every sample
+                if (days != pendingDays) sounds.play(SoundEffect.TICK)
+                onChanged(days)
+            },
+            valueRange = range.first.toFloat()..range.last.toFloat(),
+            steps = range.last - range.first - 1,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("$testTagPrefix-slider"),
+        )
+        if (pendingDays != null) {
+            Spacer(Modifier.height(dims.sm))
+            TextButton(
+                onClick = {
+                    sounds.play(SoundEffect.TAP_LIGHT)
+                    onChanged(null)
+                },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) {
+                Text(stringResource(R.string.setup_cycle_length_skip))
+            }
+        }
+    }
+}
+
+/**
+ * Passphrase creation form (page 5 of the onboarding flow).
  *
  * Contains two password fields with visibility toggles, inline validation errors,
  * and a "Create and Unlock" button. Validation is performed by the ViewModel via

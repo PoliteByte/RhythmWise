@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 
 /**
@@ -45,6 +47,7 @@ fun PhaseVisibilitySettings(
     showTitle: Boolean = true,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     Column {
         if (showTitle) {
@@ -61,7 +64,10 @@ fun PhaseVisibilitySettings(
             trailingContent = {
                 Switch(
                     checked = showFollicular,
-                    onCheckedChange = onFollicularToggled
+                    onCheckedChange = { checked ->
+                        sounds.play(if (checked) SoundEffect.TOGGLE_ON else SoundEffect.TOGGLE_OFF)
+                        onFollicularToggled(checked)
+                    }
                 )
             }
         )
@@ -72,7 +78,10 @@ fun PhaseVisibilitySettings(
             trailingContent = {
                 Switch(
                     checked = showOvulation,
-                    onCheckedChange = onOvulationToggled
+                    onCheckedChange = { checked ->
+                        sounds.play(if (checked) SoundEffect.TOGGLE_ON else SoundEffect.TOGGLE_OFF)
+                        onOvulationToggled(checked)
+                    }
                 )
             }
         )
@@ -83,7 +92,10 @@ fun PhaseVisibilitySettings(
             trailingContent = {
                 Switch(
                     checked = showLuteal,
-                    onCheckedChange = onLutealToggled
+                    onCheckedChange = { checked ->
+                        sounds.play(if (checked) SoundEffect.TOGGLE_ON else SoundEffect.TOGGLE_OFF)
+                        onLutealToggled(checked)
+                    }
                 )
             }
         )

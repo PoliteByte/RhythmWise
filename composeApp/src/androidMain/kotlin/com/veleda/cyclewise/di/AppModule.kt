@@ -41,6 +41,7 @@ import com.veleda.cyclewise.domain.providers.CustomTagLibraryProvider
 import com.veleda.cyclewise.domain.providers.MedicationLibraryProvider
 import com.veleda.cyclewise.domain.providers.SymptomLibraryProvider
 import com.veleda.cyclewise.domain.usecases.AutoCloseOngoingPeriodUseCase
+import com.veleda.cyclewise.domain.usecases.GetCycleStatusUseCase
 import com.veleda.cyclewise.domain.usecases.DebugSeederUseCase
 import com.veleda.cyclewise.domain.usecases.DeleteAllDataUseCase
 import com.veleda.cyclewise.domain.usecases.TutorialCleanupUseCase
@@ -61,6 +62,8 @@ import com.veleda.cyclewise.ui.log.DailyLogViewModel
 import com.veleda.cyclewise.settings.AppSettings
 import com.veleda.cyclewise.ui.auth.PassphraseViewModel
 import com.veleda.cyclewise.reminders.ReminderScheduler
+import com.veleda.cyclewise.sound.SoundEffectPlayer
+import com.veleda.cyclewise.sound.SoundPoolSoundEffectPlayer
 import com.veleda.cyclewise.ui.insights.InsightsViewModel
 import com.veleda.cyclewise.ui.settings.SettingsViewModel
 import kotlinx.datetime.LocalDate
@@ -235,6 +238,8 @@ val appModule = module {
 
     single { ReminderScheduler(androidContext()) }
 
+    single<SoundEffectPlayer> { SoundPoolSoundEffectPlayer(androidContext(), get()) }
+
     single<EducationalContentProvider> {
         StaticEducationalContentProvider(EducationalContentLoader.load(androidContext()))
     }
@@ -318,6 +323,7 @@ val appModule = module {
         scoped { get<PeriodDatabase>().waterIntakeDao() }
         scoped { get<PeriodDatabase>().customTagDao() }
         scoped { get<PeriodDatabase>().customTagLogDao() }
+        scoped { get<PeriodDatabase>().userCycleSettingsDao() }
 
         // Repository Provider
         scoped<PeriodRepository> {
@@ -333,6 +339,7 @@ val appModule = module {
                 waterIntakeDao = get(),
                 customTagDao = get(),
                 customTagLogDao = get(),
+                userCycleSettingsDao = get(),
             )
         }
 
@@ -347,6 +354,7 @@ val appModule = module {
         scoped { TutorialSeederUseCase(get()) }
         scoped { TutorialCleanupUseCase(get()) }
         scoped { AutoCloseOngoingPeriodUseCase(get()) }
+        scoped { GetCycleStatusUseCase(get()) }
         scoped { RenameSymptomUseCase(get()) }
         scoped { DeleteSymptomUseCase(get()) }
         scoped { RenameMedicationUseCase(get()) }
@@ -382,6 +390,7 @@ val appModule = module {
                 renameCustomTagUseCase = get(),
                 deleteCustomTagUseCase = get(),
                 hintPreferences = get(),
+                getCycleStatus = get(),
             )
         }
 

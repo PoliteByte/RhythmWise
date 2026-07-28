@@ -124,8 +124,9 @@ class CalendarDayCellTest {
     }
 
     @Test
-    fun `GIVEN today with heatmap THEN renders heatmap border instead of today border`() {
-        // GIVEN — today cell with heatmap active (heatmap border takes priority)
+    fun `GIVEN today with heatmap THEN renders heatmap border and today ring together`() {
+        // GIVEN — today cell with heatmap active (today ring stays visible in all
+        // display modes since #146)
         setContent(
             isToday = true,
             heatmapColor = testHeatmapColor,
@@ -182,7 +183,7 @@ class CalendarDayCellTest {
 
     @Test
     fun `GIVEN today and phaseBorderColor THEN renders without crash`() {
-        // GIVEN — today cell with phase border active (today ring suppressed)
+        // GIVEN — today cell with phase border active (today ring also visible since #146)
         setContent(
             isToday = true,
             phaseBorderColor = Color(0xFF80CBC4),

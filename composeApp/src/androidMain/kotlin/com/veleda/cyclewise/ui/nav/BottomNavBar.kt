@@ -11,6 +11,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 
 /** Reduced opacity applied to bottom nav items when [enabled] is `false`. */
 private const val DISABLED_ALPHA = 0.38f
@@ -32,6 +34,7 @@ private const val DISABLED_ALPHA = 0.38f
 fun BottomNavBar(navController: NavController, enabled: Boolean = true) {
     val navBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentRoute = navBackStackEntry?.destination?.route
+    val sounds = LocalSoundEffects.current
 
     NavigationBar(
         tonalElevation = 3.dp,
@@ -56,6 +59,7 @@ fun BottomNavBar(navController: NavController, enabled: Boolean = true) {
                 enabled = enabled,
                 onClick = {
                     if (enabled && currentRoute != route.route) {
+                        sounds.play(SoundEffect.TAP)
                         navController.navigate(route.route) {
                             popUpTo(navController.graph.startDestinationId) { saveState = true }
                             launchSingleTop = true

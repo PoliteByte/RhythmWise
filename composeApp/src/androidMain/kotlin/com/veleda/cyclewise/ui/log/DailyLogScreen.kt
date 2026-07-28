@@ -44,6 +44,9 @@ import com.veleda.cyclewise.settings.AppSettings
 import com.veleda.cyclewise.settings.parseSeedManifest
 import com.veleda.cyclewise.settings.runSeedCleanupIfNeeded
 import com.veleda.cyclewise.settings.toJson
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.PagerSoundEffect
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.tracker.TRACKER_HINTS
 import com.veleda.cyclewise.ui.coachmark.CoachMarkOverlay
 import com.veleda.cyclewise.ui.coachmark.CoachMarkState
@@ -100,12 +103,15 @@ private const val TAB_ROW_SETTLE_MS = 500L
  * @param onDone Callback invoked when the user taps the "Done" button on any tab page
  *        to return to the Tracker screen.
  */
+// Screen-level composable hosting the pager, walkthrough, and dialogs — cohesive by design
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DailyLogScreen(
     date: LocalDate,
     onNavigateToTracker: () -> Unit = {},
     onDone: () -> Unit = {},
+    showCycleStatus: Boolean = false,
 ) {
     val dims = LocalDimensions.current
     val koin = getKoin()
@@ -119,6 +125,11 @@ fun DailyLogScreen(
     val uiState by viewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
     val coroutineScope = rememberCoroutineScope()
+    val sounds = LocalSoundEffects.current
+
+    // Swipe whoosh on every settled page change — covers both user swipes and the
+    // programmatic scrolls from tab clicks, so the tab handlers stay silent.
+    PagerSoundEffect(pagerState)
 
     // Coach mark system
     val hintPreferences: HintPreferences = koin.get()
@@ -305,6 +316,7 @@ fun DailyLogScreen(
 
             LaunchedEffect(uiState.errorMessage) {
                 val message = uiState.errorMessage ?: return@LaunchedEffect
+                sounds.play(SoundEffect.ERROR)
                 snackbarHostState.showSnackbar(message)
                 viewModel.onEvent(DailyLogEvent.ErrorDismissed)
             }
@@ -324,6 +336,21 @@ fun DailyLogScreen(
                             .padding(horizontal = dims.md, vertical = dims.md)
                             .coachMarkTarget(HintKey.DAILY_LOG_WELCOME, coachMarkState)
                     )
+
+                    // Glanceable cycle status — home screen only (issue #142)
+                    if (showCycleStatus) {
+                        uiState.cycleStatus?.let { status ->
+                            CycleStatusBanner(
+                                status = status,
+                                onClick = onNavigateToTracker,
+                                modifier = Modifier.padding(
+                                    start = dims.md,
+                                    end = dims.md,
+                                    bottom = dims.sm,
+                                ),
+                            )
+                        }
+                    }
 
                     // Page indicator tabs
                     ScrollableTabRow(
@@ -446,10 +473,10 @@ fun DailyLogScreen(
                                 },
                                 onLibidoChanged = { viewModel.onEvent(DailyLogEvent.LibidoScoreChanged(it)) },
                                 onWaterIncrement = {
+                                    // No walkthrough advancement here (issue #148):
+                                    // the water step is informational, so the user
+                                    // can tap + repeatedly; the tooltip advances it
                                     viewModel.onEvent(DailyLogEvent.WaterIncrement)
-                                    if (activeHint?.def?.key == HintKey.DAILY_LOG_WATER) {
-                                        coachMarkState.advanceOrDismiss(DAILY_LOG_HINTS)
-                                    }
                                 },
                                 onWaterDecrement = { viewModel.onEvent(DailyLogEvent.WaterDecrement) },
                                 onDone = onDone,

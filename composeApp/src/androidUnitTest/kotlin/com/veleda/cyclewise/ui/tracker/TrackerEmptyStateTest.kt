@@ -62,6 +62,7 @@ class TrackerEmptyStateTest {
         mockEducationalContentProvider = mockk(relaxed = true)
 
         every { mockRepository.observeDayDetails() } returns flowOf(emptyMap())
+        every { mockRepository.observeCycleSettings() } returns flowOf(com.veleda.cyclewise.domain.models.CycleSettings())
         every { mockSymptomProvider.symptoms } returns flowOf(emptyList())
         every { mockMedicationProvider.medications } returns flowOf(emptyList())
     }

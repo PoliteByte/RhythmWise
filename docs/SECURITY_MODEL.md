@@ -28,6 +28,10 @@
 - On logout or app background timeout:
     - All repositories and DAOs in the scope are closed.
     - The session scope is destroyed.
+- The background timeout is user-configurable (Immediately / 5–30 min / Never).
+  "Never" disables only the foreground-return timer after an explicit in-app
+  warning — Lock Now, process death, and the cold-start passphrase requirement
+  are unaffected, so data at rest is always encrypted regardless of the setting.
 
 ---
 

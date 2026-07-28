@@ -60,6 +60,7 @@ content from these companion documents:
   - [2.11 Coach Mark / Tutorial System](#211-coach-mark--tutorial-system)
   - [2.12 Educational Content System](#212-educational-content-system)
   - [2.13 Reusable UI Components](#213-reusable-ui-components)
+  - [2.14 UI Sound Effects System](#214-ui-sound-effects-system)
 - [Phase 3 — Code Organization and Design Principles](#phase-3--code-organization-and-design-principles)
   - [3.1 Why Interfaces Live in Shared Module](#31-why-interfaces-live-in-shared-module)
   - [3.2 Why Platform Implementations Live in composeApp](#32-why-platform-implementations-live-in-composeapp)
@@ -2277,6 +2278,55 @@ optional trailing buttons.
 
 Both buttons are end-aligned in the title row. Help callbacks typically open a
 `HelpDialog`; info callbacks dispatch `ShowEducationalSheet` events.
+
+---
+
+## 2.14 UI Sound Effects System
+
+Every meaningful interaction plays a short, subtle sound. The system lives in
+`composeApp/.../sound/` and is Android-only (SoundPool is a platform API).
+
+### Architecture
+
+- **`SoundEffect`** — enum mapping the app's sound vocabulary to `res/raw` assets:
+  `TAP`, `TAP_LIGHT`, `TICK`, `TOGGLE_ON`/`TOGGLE_OFF`, `SELECT`/`DESELECT`,
+  `SWIPE`, `OPEN`/`CLOSE`, `SUCCESS`, `ERROR`. Pick by *meaning*, not by sound.
+- **`SoundEffectPlayer`** — the interface (`play(effect)`, plus
+  `preview(effect, volumePercent)` used by the settings volume slider).
+  `NoOpSoundEffectPlayer` is the silent default for previews and tests.
+- **`SoundPoolSoundEffectPlayer`** — Koin **singleton** (safe: it depends only on
+  `Context` + `AppSettings`, never the session scope). Preloads all effects into a
+  `SoundPool` on the `USAGE_ASSISTANCE_SONIFICATION` audio stream and mirrors the
+  `AppSettings` enabled/volume flows into fields so `play()` stays synchronous.
+- **`LocalSoundEffects`** — CompositionLocal provided once in `CycleWiseAppUI`.
+  Composables read it with `val sounds = LocalSoundEffects.current`.
+- **`PagerSoundEffect(pagerState)`** — drop-in composable that plays `SWIPE` once
+  per page crossing (keyed on `currentPage`, which flips mid-gesture — `settledPage`
+  fires only after the snap animation and sounds late). It also covers programmatic
+  `animateScrollToPage`, so tab clicks that drive a pager must NOT play their own
+  tap sound.
+
+### Conventions
+
+- Play the sound as the **first statement** of the interaction lambda, before
+  dispatching the event: `onClick = { sounds.play(SoundEffect.TAP); onEvent(...) }`.
+- Guard repeat-prone sounds on actual state change — stepped sliders and exclusive
+  chips use `sounds.playOnChange(effect, current, new)`; the calendar drag ticks
+  only when the hovered day changes.
+- `AlertDialog`s stay silent (platform convention); bottom sheets play `OPEN`/`CLOSE`.
+- Sounds are UI-layer only. ViewModels never see the player; one-shot outcomes
+  (success/error) are sounded where their `SharedFlow` effects are collected.
+
+### Assets and volume
+
+The 12 WAV assets (`res/raw/snd_*.wav`) are synthesized by
+`tools/generate_ui_sounds.py` — one tonal family (D-pentatonic blips, pitchless
+noise whooshes). Never hand-edit the WAVs; re-tune the script and re-run it.
+The feature is **off by default** and positioned in Settings → Notifications →
+Sound as an accessibility aid (audio feedback for users who can't easily see the
+screen). The volume setting stores 0–100 with a default of 80; playback gain
+applies a perceptual x² curve (`soundVolumeGain`), and the assets are authored to
+feel subtle at exactly that 80% default, leaving headroom above it.
 
 ---
 

@@ -142,7 +142,10 @@ class InsightEngineTest {
         val insights = insightEngine.generateInsights(insufficientPeriods, logs, symptomLib, topSymptomsCount = 2).insights()
 
         // ASSERT
-        assertTrue(insights.none { it is NextPeriodPrediction || it is CycleLengthAverage }, "Cycle-based insights should be omitted")
+        // Since #143, the prediction resolves a fallback cycle length and appears
+        // from the first period; observation-style cycle insights stay gated.
+        assertTrue(insights.none { it is CycleLengthAverage }, "Observed-average insights should be omitted")
+        assertTrue(insights.any { it is NextPeriodPrediction }, "Prediction should appear via the resolver fallback")
         assertTrue(insights.filterIsInstance<TopSymptomsInsight>().isNotEmpty(), "Symptom-based insights should still be generated")
     }
 

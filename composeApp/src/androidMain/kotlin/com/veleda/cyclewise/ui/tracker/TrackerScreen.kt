@@ -25,6 +25,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import kotlinx.datetime.daysUntil
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -49,6 +54,8 @@ import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import com.veleda.cyclewise.domain.models.CyclePhase
 import com.veleda.cyclewise.settings.AppSettings
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.coachmark.CoachMarkOverlay
 import com.veleda.cyclewise.ui.coachmark.CoachMarkState
 import com.veleda.cyclewise.ui.coachmark.HintKey
@@ -94,6 +101,7 @@ import java.time.YearMonth as JavaYearMonth
 @Composable
 fun TrackerScreen(navController: NavController) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     val viewModel: TrackerViewModel = koinInject(scope = getKoin().getScope("session"))
     val uiState by viewModel.uiState.collectAsState()
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
@@ -119,7 +127,9 @@ fun TrackerScreen(navController: NavController) {
     val skipTrackerTutorial: () -> Unit = {
         trackerWalkthroughActive = false
         coroutineScope.launch {
-            val sessionScope = koin.getScope("session")
+            // Session may close (autolock/logout) before this coroutine runs —
+            // getScope would throw and crash the app (issue #141)
+            val sessionScope = koin.getScopeOrNull("session") ?: return@launch
             val cleanup: TutorialCleanupUseCase = sessionScope.get()
             runSeedCleanupIfNeeded(appSettings, cleanup)
         }
@@ -151,7 +161,9 @@ fun TrackerScreen(navController: NavController) {
         if (trackerWalkthroughActive && activeHint == null && pendingKey == null) {
             trackerWalkthroughActive = false
             coroutineScope.launch {
-                val sessionScope = koin.getScope("session")
+                // Session may close (autolock/logout) before this coroutine runs —
+                // getScope would throw and crash the app (issue #141)
+                val sessionScope = koin.getScopeOrNull("session") ?: return@launch
                 val cleanup: TutorialCleanupUseCase = sessionScope.get()
                 runSeedCleanupIfNeeded(appSettings, cleanup)
             }
@@ -242,6 +254,11 @@ fun TrackerScreen(navController: NavController) {
     }
 
     var showSuccess by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    // Resolved during composition; the effect collector formats the count in
+    // (avoids resource lookups through a captured Context - lint requirement)
+    val autofillMessagePattern = stringResource(R.string.period_autofill_snackbar)
+    val autofillUndoLabel = stringResource(R.string.period_autofill_undo)
     var emptyOverlayDismissed by remember { mutableStateOf(false) }
     var showTrackerHelp by remember { mutableStateOf(false) }
 
@@ -264,7 +281,24 @@ fun TrackerScreen(navController: NavController) {
                     }
                 }
                 is TrackerEffect.PeriodMarked -> {
+                    sounds.play(SoundEffect.SUCCESS)
                     showSuccess = true
+                }
+                is TrackerEffect.PeriodAutoFilled -> {
+                    sounds.play(SoundEffect.SUCCESS)
+                    showSuccess = true
+                    // Undo snackbar for the auto-filled range (issue #144)
+                    val filledDays = effect.startDate.daysUntil(effect.endDate) + 1
+                    val result = snackbarHostState.showSnackbar(
+                        message = autofillMessagePattern.format(filledDays),
+                        actionLabel = autofillUndoLabel,
+                        duration = SnackbarDuration.Long,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.onEvent(
+                            TrackerEvent.UndoAutoFill(effect.periodId, effect.startDate)
+                        )
+                    }
                 }
             }
         }
@@ -330,7 +364,10 @@ fun TrackerScreen(navController: NavController) {
         )
     }
 
-    Scaffold(contentWindowInsets = WindowInsets.statusBars) { padding ->
+    Scaffold(
+        contentWindowInsets = WindowInsets.statusBars,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
         ContentContainer(maxWidth = dims.gridMaxWidth) {
         Column(
@@ -376,35 +413,44 @@ fun TrackerScreen(navController: NavController) {
                 }
             }
 
-            Row(
+            // Box overlay so the Today button is centered on the SCREEN, not in the
+            // space left over by the trailing icons (issue #146)
+            Box(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = dims.md),
-                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Spacer(Modifier.weight(1f))
                 FilledTonalButton(
                     onClick = {
+                        sounds.play(SoundEffect.TAP)
                         coroutineScope.launch {
                             calendarState.animateScrollToMonth(currentMonth)
                         }
-                    }
+                    },
+                    modifier = Modifier.align(Alignment.Center),
                 ) {
                     Text(stringResource(R.string.tracker_today))
                 }
-                Spacer(Modifier.weight(1f))
-                HelpButton(
-                    onClick = { showTrackerHelp = true },
-                    contentDescription = stringResource(
-                        R.string.help_button_cd,
-                        stringResource(R.string.help_tracker_title),
-                    ),
-                )
-                InfoButton(
-                    onClick = { viewModel.onEvent(TrackerEvent.ShowEducationalSheet("CyclePhase")) },
-                    contentDescription = stringResource(
-                        R.string.educational_info_button_cd,
-                        stringResource(R.string.tracker_phase_label),
-                    ),
-                )
+                Row(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    HelpButton(
+                        onClick = { sounds.play(SoundEffect.TAP_LIGHT); showTrackerHelp = true },
+                        contentDescription = stringResource(
+                            R.string.help_button_cd,
+                            stringResource(R.string.help_tracker_title),
+                        ),
+                    )
+                    InfoButton(
+                        onClick = {
+                            sounds.play(SoundEffect.TAP_LIGHT)
+                            viewModel.onEvent(TrackerEvent.ShowEducationalSheet("CyclePhase"))
+                        },
+                        contentDescription = stringResource(
+                            R.string.educational_info_button_cd,
+                            stringResource(R.string.tracker_phase_label),
+                        ),
+                    )
+                }
             }
 
             val daysOfWeek = remember(firstDayOfWeek) {

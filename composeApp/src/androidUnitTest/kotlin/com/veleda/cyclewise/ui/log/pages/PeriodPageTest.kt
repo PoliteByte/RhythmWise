@@ -98,19 +98,19 @@ class PeriodPageTest {
     @Test
     fun flowSection_WHEN_isPeriodDayFalse_THEN_notDisplayed() {
         setContent(isPeriodDay = false)
-        // FlowIntensity chip labels are ALL CAPS enum names
-        composeTestRule.onNodeWithText("LIGHT").assertDoesNotExist()
-        composeTestRule.onNodeWithText("MEDIUM").assertDoesNotExist()
-        composeTestRule.onNodeWithText("HEAVY").assertDoesNotExist()
+        // FlowIntensity chips render title-case labels via string resources (#146)
+        composeTestRule.onNodeWithText("Light").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Medium").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Heavy").assertDoesNotExist()
     }
 
     @Test
     fun flowSection_WHEN_isPeriodDayTrue_THEN_allChipsDisplayed() {
         setContent(isPeriodDay = true)
-        // FlowIntensity chip labels: intensity.name.replaceFirstChar { it.uppercase() } → ALL CAPS
-        composeTestRule.onNodeWithText("LIGHT").assertIsDisplayed()
-        composeTestRule.onNodeWithText("MEDIUM").assertIsDisplayed()
-        composeTestRule.onNodeWithText("HEAVY").assertIsDisplayed()
+        // FlowIntensity chip labels come from flowIntensityLabel() string resources
+        composeTestRule.onNodeWithText("Light").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Medium").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Heavy").assertIsDisplayed()
     }
 
     @Test
@@ -156,7 +156,7 @@ class PeriodPageTest {
     fun flowChip_WHEN_lightTapped_THEN_invokesCallbackWithLight() {
         var captured: FlowIntensity? = null
         setContent(isPeriodDay = true, onFlowChanged = { captured = it })
-        composeTestRule.onNodeWithText("LIGHT").performClick()
+        composeTestRule.onNodeWithText("Light").performClick()
         assert(captured == FlowIntensity.LIGHT) { "Expected LIGHT, got $captured" }
     }
 
@@ -168,7 +168,7 @@ class PeriodPageTest {
             flowIntensity = FlowIntensity.MEDIUM,
             onFlowChanged = { captured = it },
         )
-        composeTestRule.onNodeWithText("MEDIUM").performClick()
+        composeTestRule.onNodeWithText("Medium").performClick()
         assert(captured == null) { "Expected null (deselect), got $captured" }
     }
 

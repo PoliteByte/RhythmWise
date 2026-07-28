@@ -2,6 +2,7 @@ package com.veleda.cyclewise.ui.tracker
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.veleda.cyclewise.domain.CycleLengthResolver
 import com.veleda.cyclewise.domain.models.CustomTag
 import com.veleda.cyclewise.domain.models.DayHeatmapData
 import com.veleda.cyclewise.domain.models.EducationalArticle
@@ -188,6 +189,9 @@ class TrackerViewModel(
             is TrackerEvent.DayTapped -> viewModelScope.launch {
                 val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
                 val date = event.date
+                // Future days have no log to show and must not create one (issue #147);
+                // the UI already blocks this — kept as defense in depth
+                if (date > today) return@launch
                 val periodForDate = _uiState.value.periods.find {
                     date in (it.startDate..(it.endDate ?: today))
                 }
@@ -210,8 +214,11 @@ class TrackerViewModel(
             }
 
             is TrackerEvent.PeriodMarkDay -> viewModelScope.launch {
+                val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                // Period days can only be marked up to today (issue #147)
+                if (event.date > today) return@launch
                 val periodForDate = _uiState.value.periods.find {
-                    event.date in (it.startDate..(it.endDate ?: Clock.System.todayIn(TimeZone.currentSystemDefault())))
+                    event.date in (it.startDate..(it.endDate ?: today))
                 }
                 if (periodForDate != null) {
                     // Check if the period log has user-entered data before unmarking
@@ -230,15 +237,36 @@ class TrackerViewModel(
                         _effect.tryEmit(TrackerEffect.PeriodMarked)
                     }
                 } else {
-                    periodRepository.logPeriodDay(event.date)
-                    _effect.tryEmit(TrackerEffect.PeriodMarked)
+                    // Fresh start: auto-fill the expected duration (issue #144)
+                    val result = periodRepository.logPeriodStart(event.date)
+                    if (result.autoFilled && result.periodId != null) {
+                        _effect.tryEmit(
+                            TrackerEffect.PeriodAutoFilled(
+                                periodId = result.periodId!!,
+                                startDate = result.filledStart,
+                                endDate = result.filledEnd,
+                            )
+                        )
+                    } else {
+                        _effect.tryEmit(TrackerEffect.PeriodMarked)
+                    }
                 }
             }
 
+            is TrackerEvent.UndoAutoFill -> viewModelScope.launch {
+                // Shrink back to the tapped day — the user's explicit intent —
+                // rather than deleting the period outright
+                periodRepository.updatePeriodEndDate(event.periodId, event.startDate)
+            }
+
             is TrackerEvent.PeriodRangeDragged -> viewModelScope.launch {
-                val anchor = event.anchorDate
-                val release = event.releaseDate
                 val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                // Clamp the drag to today; ignore ranges that lie entirely in the
+                // future (issue #147). Shrink branches are unaffected: their anchors
+                // are existing period edges, which never lie beyond today.
+                if (minOf(event.anchorDate, event.releaseDate) > today) return@launch
+                val anchor = minOf(event.anchorDate, today)
+                val release = minOf(event.releaseDate, today)
                 val rangeStart = minOf(anchor, release)
                 val rangeEnd = maxOf(anchor, release)
 
@@ -336,6 +364,7 @@ class TrackerViewModel(
             is TrackerEvent.ScreenEntered -> currentState
             is TrackerEvent.DayTapped -> currentState
             is TrackerEvent.PeriodMarkDay -> currentState
+            is TrackerEvent.UndoAutoFill -> currentState
             is TrackerEvent.PeriodRangeDragged -> currentState
             is TrackerEvent.DismissLogSheet -> {
                 currentState.copy(logForSheet = null, periodIdForSheet = null, waterCupsForSheet = null)
@@ -423,22 +452,20 @@ class TrackerViewModel(
      * so the [PeriodPredictionWorker][com.veleda.cyclewise.reminders.workers.PeriodPredictionWorker]
      * can access it without unlocking the encrypted database.
      *
-     * Uses the same average-cycle-length algorithm as [InsightEngine]: computes the mean
-     * cycle length from completed periods and projects from the latest period's start date.
-     * Requires at least 2 completed periods. Clears the cache when insufficient data exists.
+     * Uses [CycleLengthResolver] — the same precedence as the Insights prediction
+     * card (derived average → user typical → 28-day default, issue #143) — so the
+     * notification and the card can never disagree. A prediction is cached from
+     * the first logged period; the cache is cleared only when no periods exist.
      */
     private suspend fun updatePredictionCache(periods: List<Period>) {
-        val completed = periods.filter { it.endDate != null }.sortedBy { it.startDate }
-        if (completed.size < 2) {
+        val latest = periods.maxByOrNull { it.startDate }
+        if (latest == null) {
             appSettings.setCachedPredictedPeriodDate("")
             return
         }
-        val cycleLengths = completed.zipWithNext { current, next ->
-            current.startDate.daysUntil(next.startDate).toDouble()
-        }
-        val avgDays = cycleLengths.average().roundToInt()
-        val latest = periods.maxBy { it.startDate }
-        val predicted = latest.startDate.plus(avgDays, DateTimeUnit.DAY)
+        val typical = periodRepository.observeCycleSettings().first().typicalCycleLengthDays
+        val resolved = CycleLengthResolver.resolve(periods, typical)
+        val predicted = latest.startDate.plus(resolved.days.roundToInt(), DateTimeUnit.DAY)
         appSettings.setCachedPredictedPeriodDate(predicted.toString())
     }
 

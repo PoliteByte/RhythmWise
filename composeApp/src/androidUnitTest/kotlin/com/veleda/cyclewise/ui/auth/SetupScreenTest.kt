@@ -10,6 +10,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.click
 import com.veleda.cyclewise.RobolectricTestApp
 import com.veleda.cyclewise.ui.theme.Dimensions
 import com.veleda.cyclewise.ui.theme.LocalDimensions
@@ -114,7 +117,7 @@ class SetupScreenTest {
     fun nextButton_WHEN_navigatedToLastPage_THEN_notDisplayed() {
         // Given — navigate through all pages to page 3 (last)
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -145,7 +148,7 @@ class SetupScreenTest {
     fun createPage_WHEN_navigatedTo_THEN_fieldsDisplayed() {
         // Given — navigate to last page
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -160,7 +163,7 @@ class SetupScreenTest {
     fun createButton_WHEN_passphraseShort_THEN_isDisabled() {
         // Given — navigate to last page
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -177,7 +180,7 @@ class SetupScreenTest {
     fun createButton_WHEN_passphraseLongEnoughAndConfirmed_THEN_isEnabled() {
         // Given — navigate to last page
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -194,7 +197,7 @@ class SetupScreenTest {
     fun createButton_WHEN_confirmationEmpty_THEN_isDisabled() {
         // Given — navigate to last page
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -211,7 +214,7 @@ class SetupScreenTest {
         // Given
         val events = mutableListOf<PassphraseEvent>()
         setContent(onEvent = { events.add(it) })
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -236,7 +239,7 @@ class SetupScreenTest {
     fun createButton_WHEN_isUnlocking_THEN_isDisabled() {
         // Given
         setContent(uiState = PassphraseUiState(isUnlocking = true))
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -255,7 +258,7 @@ class SetupScreenTest {
     fun passphraseError_WHEN_nonNull_THEN_errorTextDisplayed() {
         // Given — navigate to last page
         setContent(uiState = PassphraseUiState(passphraseError = "too_short"))
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -269,7 +272,7 @@ class SetupScreenTest {
     fun confirmationError_WHEN_nonNull_THEN_errorTextDisplayed() {
         // Given
         setContent(uiState = PassphraseUiState(confirmationError = "mismatch"))
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -287,7 +290,7 @@ class SetupScreenTest {
     fun visibilityToggle_WHEN_rendered_THEN_showButtonsDisplayed() {
         // Given — navigate to last page
         setContent()
-        repeat(3) {
+        repeat(4) {
             composeTestRule.onNodeWithTag("setup-next").performClick()
             composeTestRule.waitForIdle()
         }
@@ -299,4 +302,46 @@ class SetupScreenTest {
     }
 
     // endregion
+
+    @Test
+    fun cycleQuestionsPage_WHEN_navigatedTo_THEN_showsBothQuestions() {
+        // GIVEN / WHEN — navigate to page 4 (cycle questions)
+        setContent()
+        repeat(3) {
+            composeTestRule.onNodeWithText("Next").performClick()
+            composeTestRule.waitForIdle()
+        }
+
+        // THEN — period length leads, cycle length follows, both sliders present
+        // (cycle question may sit below the fold — scroll before asserting)
+        composeTestRule.onNodeWithText("How Long Does Your Period Usually Last?").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("period-length-slider").assertIsDisplayed()
+        composeTestRule.onNodeWithText("What's Your Typical Cycle Length?")
+            .performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithTag("cycle-length-slider")
+            .performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun cycleQuestionsPage_WHEN_periodAnswerSet_THEN_dispatchesEventAndUnsetByDefault() {
+        // GIVEN — page 4 with captured events
+        val events = mutableListOf<PassphraseEvent>()
+        setContent(onEvent = { events.add(it) })
+        repeat(3) {
+            composeTestRule.onNodeWithText("Next").performClick()
+            composeTestRule.waitForIdle()
+        }
+
+        // THEN — the period question starts unset ("Not set" appears in both
+        // questions, so anchor on the period value's tag)
+        composeTestRule.onNodeWithTag("period-length-value").assertIsDisplayed()
+
+        // WHEN — the period slider is touched
+        composeTestRule.onNodeWithTag("period-length-slider").performTouchInput { click(center) }
+
+        // THEN — a DefaultPeriodLengthChanged event carries the chosen days
+        assert(events.filterIsInstance<PassphraseEvent.DefaultPeriodLengthChanged>().isNotEmpty()) {
+            "Expected DefaultPeriodLengthChanged, got $events"
+        }
+    }
 }

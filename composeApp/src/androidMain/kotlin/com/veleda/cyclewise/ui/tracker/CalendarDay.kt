@@ -56,6 +56,9 @@ import kotlinx.datetime.toKotlinLocalDate
 /** Alpha applied to the period-range fill when a day is in the selection/removal range. */
 private const val PERIOD_FILL_ALPHA = 0.4f
 
+/** Text alpha for future day numbers — visibly muted but still readable (issue #147). */
+private const val FUTURE_DAY_TEXT_ALPHA = 0.5f
+
 /**
  * A single calendar-day cell rendered inside the [HorizontalCalendar] grid.
  *
@@ -120,6 +123,9 @@ private const val PERIOD_FILL_ALPHA = 0.4f
  *                          whether this specific day has heatmap data. Used to suppress period
  *                          fill and shape overrides so period days are treated uniformly as
  *                          border-only when the heatmap is active.
+ * @param isFuture          True for dates after today. Future cells render with a muted day
+ *                          number and ignore taps — logging is only possible up to today
+ *                          (issue #147).
  */
 @Composable
 internal fun CalendarDayCell(
@@ -144,6 +150,7 @@ internal fun CalendarDayCell(
     isHeatmapEnd: Boolean = true,
     phaseBorderColor: Color? = null,
     isHeatmapModeActive: Boolean = false,
+    isFuture: Boolean = false,
 ) {
     val dims = LocalDimensions.current
     val date = day.date.toKotlinLocalDate()
@@ -254,16 +261,23 @@ internal fun CalendarDayCell(
                     }
                 }
             }
+            // Today ring: inverseSurface guarantees contrast against pastel phase
+            // fills, user-customizable period colors, and heatmap overlays; drawn
+            // in EVERY display mode — it used to vanish whenever heatmap or
+            // phase-border rendering was active (issue #146)
             .border(
-                width = if (isToday && heatmapColor == null && phaseBorderColor == null) dims.xxs else 0.dp,
-                color = if (isToday && heatmapColor == null && phaseBorderColor == null)
-                    MaterialTheme.colorScheme.primary else Color.Transparent,
+                width = if (isToday) dims.xxs else 0.dp,
+                color = if (isToday) {
+                    MaterialTheme.colorScheme.inverseSurface
+                } else {
+                    Color.Transparent
+                },
                 shape = CircleShape
             )
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
-                enabled = day.position == DayPosition.MonthDate && !isDragging,
+                enabled = day.position == DayPosition.MonthDate && !isDragging && !isFuture,
                 onClick = { onTap?.invoke() }
             )
             .onGloballyPositioned { coords ->
@@ -280,10 +294,11 @@ internal fun CalendarDayCell(
         ) {
             Text(
                 text = day.date.dayOfMonth.toString(),
-                color = if (day.position == DayPosition.MonthDate)
-                    MaterialTheme.colorScheme.onSurface
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                color = when {
+                    day.position != DayPosition.MonthDate -> MaterialTheme.colorScheme.onSurfaceVariant
+                    isFuture -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = FUTURE_DAY_TEXT_ALPHA)
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
             )
 
             Row(

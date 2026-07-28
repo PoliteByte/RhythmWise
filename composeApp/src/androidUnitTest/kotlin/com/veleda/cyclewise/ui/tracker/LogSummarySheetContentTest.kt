@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -299,8 +300,8 @@ class LogSummarySheetContentTest {
         // When
         setContent(log = log, showEnergy = true)
 
-        // Then
-        composeTestRule.onNodeWithText("3 / 5").assertIsDisplayed()
+        // Then — energy renders as a bolt icon scale announcing "3 of 5" (#146)
+        composeTestRule.onNodeWithContentDescription("3 of 5").assertIsDisplayed()
     }
 
     @Test
@@ -332,8 +333,8 @@ class LogSummarySheetContentTest {
         // When
         setContent(log = log, showLibido = true)
 
-        // Then
-        composeTestRule.onNodeWithText("2 / 5").assertIsDisplayed()
+        // Then — libido renders as a heart icon scale announcing "2 of 5" (#146)
+        composeTestRule.onNodeWithContentDescription("2 of 5").assertIsDisplayed()
     }
 
     @Test

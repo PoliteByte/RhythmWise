@@ -7,6 +7,8 @@ import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.pointer.pointerInput
@@ -18,11 +20,14 @@ import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.CalendarState
 import com.kizitonwose.calendar.core.DayPosition
 import com.veleda.cyclewise.domain.models.CyclePhase
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.coachmark.ActiveCoachMark
 import com.veleda.cyclewise.ui.coachmark.CoachMarkState
 import com.veleda.cyclewise.ui.coachmark.HintKey
 import com.veleda.cyclewise.ui.coachmark.coachMarkTarget
 import com.veleda.cyclewise.ui.theme.CyclePhasePalette
+import kotlinx.coroutines.flow.drop
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
@@ -82,9 +87,20 @@ internal fun CalendarGrid(
     onTutorialAdvance: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // Captured here because CompositionLocals cannot be read inside pointerInput.
+    val sounds = LocalSoundEffects.current
+
     val anchorPeriod = if (isDragging && dragAnchor != null) {
         uiState.periods.find { dragAnchor in (it.startDate..(it.endDate ?: today)) }
     } else null
+
+    // Whoosh once per month change — covers both swipe scrolling and the
+    // programmatic month jumps triggered by TrackerScreen's chevrons.
+    LaunchedEffect(calendarState) {
+        snapshotFlow { calendarState.firstVisibleMonth.yearMonth }
+            .drop(1)
+            .collect { sounds.play(SoundEffect.SWIPE) }
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -110,12 +126,16 @@ internal fun CalendarGrid(
                     val anchorDate = boundsRegistry.dateAt(rootPos)
                         ?: return@awaitEachGesture
 
+                    // Periods can only be marked up to today (issue #147)
+                    if (anchorDate > today) return@awaitEachGesture
+
                     val longPress = awaitLongPressOrCancellation(down.id)
                     if (longPress == null) {
                         // Cancelled before long-press threshold — let other gestures handle.
                         return@awaitEachGesture
                     }
 
+                    sounds.play(SoundEffect.TICK)
                     onDragStateChanged(anchorDate, anchorDate, true)
 
                     var dragged = false
@@ -127,8 +147,15 @@ internal fun CalendarGrid(
                         if (dragRootPos != null) {
                             val hoveredDate = boundsRegistry.dateAt(dragRootPos)
                             if (hoveredDate != null) {
-                                lastDragDate = hoveredDate
-                                onDragStateChanged(anchorDate, hoveredDate, true)
+                                // Dragging past today clamps the selection to today (issue #147)
+                                val clampedDate = if (hoveredDate > today) today else hoveredDate
+                                // Tick only when crossing onto a new day — unguarded it
+                                // would fire on every pointer move sample.
+                                if (clampedDate != lastDragDate) {
+                                    sounds.play(SoundEffect.TICK)
+                                }
+                                lastDragDate = clampedDate
+                                onDragStateChanged(anchorDate, clampedDate, true)
                             }
                         }
                         change.consume()
@@ -183,7 +210,9 @@ internal fun CalendarGrid(
                 val prevDisplayPhase = prevRaw?.takeIf { phaseVisible[it] != false }
                 val nextDisplayPhase = nextRaw?.takeIf { phaseVisible[it] != false }
 
-                val dayIsNotTappable = day.position != DayPosition.MonthDate
+                // Future days can't open a log or be marked (issue #147)
+                val isFutureDay = date > today
+                val dayIsNotTappable = day.position != DayPosition.MonthDate || isFutureDay
 
                 val handleTap: (() -> Unit)? = if (dayIsNotTappable) null else {
                     { onEvent(TrackerEvent.DayTapped(date)) }
@@ -268,6 +297,7 @@ internal fun CalendarGrid(
                     isHeatmapEnd = isHeatmapEnd,
                     phaseBorderColor = phaseBorderColor,
                     isHeatmapModeActive = isHeatmapActive,
+                    isFuture = isFutureDay,
                 )
             }
         )

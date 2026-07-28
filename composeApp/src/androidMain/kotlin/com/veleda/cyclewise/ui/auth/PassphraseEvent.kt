@@ -25,6 +25,21 @@ sealed interface PassphraseEvent {
         val confirmation: String,
     ) : PassphraseEvent
 
+    /**
+     * The user answered (or skipped, with null) the onboarding typical-cycle-length
+     * question (issue #143). Held in state until the first unlock succeeds, then
+     * persisted into the encrypted database.
+     */
+    data class TypicalCycleLengthChanged(val days: Int?) : PassphraseEvent
+
+    /**
+     * The user answered (or skipped, with null) the onboarding period-length
+     * question — the easier of the two cycle questions, since most users know
+     * how long they bleed even when they don't know their cycle length.
+     * Persisted alongside the cycle length after the first unlock.
+     */
+    data class DefaultPeriodLengthChanged(val days: Int?) : PassphraseEvent
+
     // ── Backup Import ───────────────────────────────────────────────
 
     /** User tapped "Import Backup" from the unlock or setup screen. */

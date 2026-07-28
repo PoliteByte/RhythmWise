@@ -64,7 +64,11 @@ val DAILY_LOG_HINTS: Map<HintKey, CoachMarkDef> = mapOf(
         bodyRes = R.string.hint_daily_log_water_body,
         nextKey = HintKey.DAILY_LOG_EXPLORE_TABS,
         dismissLabelRes = R.string.coach_mark_next,
-        requiresAction = true,
+        // Info step (issue #148): the counter stays interactive for as many
+        // taps as the user likes; tapping the tooltip advances. The old
+        // requiresAction=true advanced on the FIRST tap and dimmed the counter
+        // mid-interaction ("can't add multiple cups during demo").
+        requiresAction = false,
     ),
     HintKey.DAILY_LOG_EXPLORE_TABS to CoachMarkDef(
         key = HintKey.DAILY_LOG_EXPLORE_TABS,

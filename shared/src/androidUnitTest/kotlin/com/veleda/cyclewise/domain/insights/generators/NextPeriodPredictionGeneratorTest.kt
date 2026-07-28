@@ -28,10 +28,12 @@ class NextPeriodPredictionGeneratorTest {
     }
 
     @Test
-    fun generate_WHEN_averageCycleLengthIsNull_THEN_returnsEmptyList() {
-        // ARRANGE
+    fun generate_WHEN_singlePeriodAndNoTypicalLength_THEN_predictsWithDefaultCycle() {
+        // ARRANGE — one period, no derivable average, no user answer (issue #143:
+        // the resolver falls back to the 28-day default instead of staying silent)
+        val start = LocalDate(2025, 1, 1)
         val data = InsightData(
-            allPeriods = listOf(buildPeriod(startDate = LocalDate(2025, 1, 1), endDate = LocalDate(2025, 1, 5))),
+            allPeriods = listOf(buildPeriod(startDate = start, endDate = LocalDate(2025, 1, 5))),
             allLogs = emptyList(),
             symptomLibrary = emptyList(),
             averageCycleLength = null,
@@ -42,7 +44,60 @@ class NextPeriodPredictionGeneratorTest {
         val result = generator.generate(data)
 
         // ASSERT
-        assertTrue(result.isEmpty())
+        assertEquals(1, result.size)
+        val insight = result.first()
+        assertIs<NextPeriodPrediction>(insight)
+        assertEquals(start.plus(28, DateTimeUnit.DAY), insight.predictedDate)
+    }
+
+    @Test
+    fun generate_WHEN_singlePeriodAndTypicalLengthProvided_THEN_predictsWithTypicalLength() {
+        // ARRANGE — the user's onboarding answer drives the first prediction (issue #143)
+        val start = LocalDate(2025, 1, 1)
+        val data = InsightData(
+            allPeriods = listOf(buildPeriod(startDate = start, endDate = LocalDate(2025, 1, 5))),
+            allLogs = emptyList(),
+            symptomLibrary = emptyList(),
+            averageCycleLength = null,
+            topSymptomsCount = 3,
+            typicalCycleLengthDays = 30,
+        )
+
+        // ACT
+        val result = generator.generate(data)
+
+        // ASSERT
+        assertEquals(1, result.size)
+        val insight = result.first()
+        assertIs<NextPeriodPrediction>(insight)
+        assertEquals(start.plus(30, DateTimeUnit.DAY), insight.predictedDate)
+    }
+
+    @Test
+    fun generate_WHEN_historyExistsAndTypicalLengthProvided_THEN_derivedAverageWins() {
+        // ARRANGE — two completed periods 27 days apart; the user's answer must NOT override history
+        val older = LocalDate(2025, 1, 1)
+        val latest = older.plus(27, DateTimeUnit.DAY)
+        val data = InsightData(
+            allPeriods = listOf(
+                buildPeriod(startDate = latest, endDate = latest.plus(4, DateTimeUnit.DAY)),
+                buildPeriod(startDate = older, endDate = older.plus(5, DateTimeUnit.DAY)),
+            ),
+            allLogs = emptyList(),
+            symptomLibrary = emptyList(),
+            averageCycleLength = 27.0,
+            topSymptomsCount = 3,
+            typicalCycleLengthDays = 35,
+        )
+
+        // ACT
+        val result = generator.generate(data)
+
+        // ASSERT
+        assertEquals(1, result.size)
+        val insight = result.first()
+        assertIs<NextPeriodPrediction>(insight)
+        assertEquals(latest.plus(27, DateTimeUnit.DAY), insight.predictedDate)
     }
 
     @Test
@@ -94,19 +149,21 @@ class NextPeriodPredictionGeneratorTest {
     }
 
     @Test
-    fun generate_WHEN_averageCycleLengthHasFraction_THEN_roundsToNearestDay() {
-        // ARRANGE
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val latestPeriodStart = today.minus(10, DateTimeUnit.DAY)
-        val latestPeriod = buildPeriod(
-            startDate = latestPeriodStart,
-            endDate = latestPeriodStart.plus(4, DateTimeUnit.DAY)
-        )
+    fun generate_WHEN_derivedAverageHasFraction_THEN_roundsToNearestDay() {
+        // ARRANGE — completed periods with start-to-start gaps of 28 and 29
+        // days: derived average 28.5 rounds to 29
+        val first = LocalDate(2025, 1, 1)
+        val second = first.plus(28, DateTimeUnit.DAY)
+        val third = second.plus(29, DateTimeUnit.DAY)
         val data = InsightData(
-            allPeriods = listOf(latestPeriod),
+            allPeriods = listOf(
+                buildPeriod(startDate = third, endDate = third.plus(4, DateTimeUnit.DAY)),
+                buildPeriod(startDate = second, endDate = second.plus(4, DateTimeUnit.DAY)),
+                buildPeriod(startDate = first, endDate = first.plus(4, DateTimeUnit.DAY)),
+            ),
             allLogs = emptyList(),
             symptomLibrary = emptyList(),
-            averageCycleLength = 28.7,
+            averageCycleLength = 28.5,
             topSymptomsCount = 3
         )
 
@@ -117,8 +174,8 @@ class NextPeriodPredictionGeneratorTest {
         assertEquals(1, result.size)
         val insight = result.first()
         assertIs<NextPeriodPrediction>(insight)
-        // 28.7 rounds to 29
-        val expectedDate = latestPeriodStart.plus(29, DateTimeUnit.DAY)
+        // 28.5 rounds to 29
+        val expectedDate = third.plus(29, DateTimeUnit.DAY)
         assertEquals(expectedDate, insight.predictedDate)
     }
 

@@ -125,6 +125,14 @@ class DailyLogViewModelTest {
         every { mockRepository.getAllPeriods() } returns flowOf(emptyList())
         coEvery { mockGetOrCreateDailyLog(any()) } returns testLog
         coEvery { mockRepository.getWaterIntakeForDates(any()) } returns emptyList()
+        coEvery { mockRepository.logPeriodStart(any()) } answers {
+            com.veleda.cyclewise.domain.PeriodStartResult(
+                autoFilled = false,
+                periodId = null,
+                filledStart = firstArg(),
+                filledEnd = firstArg(),
+            )
+        }
     }
 
     @After
@@ -246,7 +254,7 @@ class DailyLogViewModelTest {
         advanceUntilIdle()
 
         // THEN — logPeriodDay was called and state updated
-        coVerify(atLeast = 1) { mockRepository.logPeriodDay(testDate) }
+        coVerify(atLeast = 1) { mockRepository.logPeriodStart(testDate) }
         assertTrue(vm.uiState.value.isPeriodDay, "isPeriodDay should be true after toggling ON")
     }
 
@@ -287,7 +295,7 @@ class DailyLogViewModelTest {
 
         // THEN — isPeriodDay is true and logPeriodDay was called
         assertTrue(vm.uiState.value.isPeriodDay, "isPeriodDay should be true even when date is already logged")
-        coVerify(atLeast = 1) { mockRepository.logPeriodDay(testDate) }
+        coVerify(atLeast = 1) { mockRepository.logPeriodStart(testDate) }
     }
 
     @Test

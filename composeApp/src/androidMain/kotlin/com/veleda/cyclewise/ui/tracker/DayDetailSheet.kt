@@ -10,8 +10,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.stringResource
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 
 /**
  * Modal bottom sheet wrapper for displaying the day-log summary.
@@ -33,9 +36,13 @@ internal fun DayDetailSheet(
     sheetState: SheetState,
     onEvent: (TrackerEvent) -> Unit,
 ) {
+    val sounds = LocalSoundEffects.current
+
     if (uiState.logForSheet != null) {
+        // Inside the conditional path so it fires once each time the sheet appears.
+        LaunchedEffect(Unit) { sounds.play(SoundEffect.OPEN) }
         ModalBottomSheet(
-            onDismissRequest = { onEvent(TrackerEvent.DismissLogSheet) },
+            onDismissRequest = { sounds.play(SoundEffect.CLOSE); onEvent(TrackerEvent.DismissLogSheet) },
             sheetState = sheetState
         ) {
             val sheetPhase = uiState.logForSheet?.let { log ->

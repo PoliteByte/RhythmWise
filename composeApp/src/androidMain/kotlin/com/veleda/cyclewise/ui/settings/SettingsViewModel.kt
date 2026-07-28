@@ -15,6 +15,7 @@ import com.veleda.cyclewise.services.BackupManager
 import com.veleda.cyclewise.session.ChangePassphraseResult
 import com.veleda.cyclewise.session.SessionManager
 import com.veleda.cyclewise.settings.AppSettings
+import com.veleda.cyclewise.settings.SOUND_VOLUME_DEFAULT_PERCENT
 import com.veleda.cyclewise.ui.auth.MIN_PASSPHRASE_LENGTH
 import com.veleda.cyclewise.ui.backup.ImportStep
 import com.veleda.cyclewise.ui.coachmark.HintPreferences
@@ -194,6 +195,8 @@ data class ColorsSettingsState(
  * @property hydrationEndHour          Active window end hour for hydration reminders.
  * @property showPermissionRationale   Whether the notification permission rationale is shown.
  * @property showPrivacyDialog         Whether the period privacy dialog is visible.
+ * @property soundEffectsEnabled       Whether UI sound effects play on interactions.
+ * @property soundEffectsVolume        UI sound effects volume percent (0-100).
  */
 data class NotificationSettingsState(
     val periodReminderEnabled: Boolean = false,
@@ -209,6 +212,8 @@ data class NotificationSettingsState(
     val hydrationEndHour: Int = 20,
     val showPermissionRationale: Boolean = false,
     val showPrivacyDialog: Boolean = false,
+    val soundEffectsEnabled: Boolean = true,
+    val soundEffectsVolume: Int = SOUND_VOLUME_DEFAULT_PERCENT,
 )
 
 /**
@@ -425,6 +430,14 @@ class SettingsViewModel(
         appSettings.reminderHydrationEndHour
             .onEach { value -> _notificationState.update { it.copy(hydrationEndHour = value) } }
             .launchIn(viewModelScope)
+
+        appSettings.soundEffectsEnabled
+            .onEach { value -> _notificationState.update { it.copy(soundEffectsEnabled = value) } }
+            .launchIn(viewModelScope)
+
+        appSettings.soundEffectsVolume
+            .onEach { value -> _notificationState.update { it.copy(soundEffectsVolume = value) } }
+            .launchIn(viewModelScope)
     }
 
     /**
@@ -498,6 +511,8 @@ class SettingsViewModel(
             is SettingsEvent.HydrationFrequencyChanged,
             is SettingsEvent.HydrationStartHourChanged,
             is SettingsEvent.HydrationEndHourChanged,
+            is SettingsEvent.SoundEffectsToggled,
+            is SettingsEvent.SoundVolumeChanged,
             is SettingsEvent.ShowPrivacyDialog,
             is SettingsEvent.DismissPrivacyDialog,
             is SettingsEvent.ShowPermissionRationale,
@@ -704,6 +719,12 @@ class SettingsViewModel(
 
             is SettingsEvent.HydrationEndHourChanged ->
                 viewModelScope.launch { appSettings.setReminderHydrationEndHour(event.hour) }
+
+            is SettingsEvent.SoundEffectsToggled ->
+                viewModelScope.launch { appSettings.setSoundEffectsEnabled(event.enabled) }
+
+            is SettingsEvent.SoundVolumeChanged ->
+                viewModelScope.launch { appSettings.setSoundEffectsVolume(event.percent) }
 
             is SettingsEvent.ExportBackupClicked -> {
                 viewModelScope.launch {
@@ -1005,6 +1026,12 @@ class SettingsViewModel(
 
             is SettingsEvent.HydrationEndHourChanged ->
                 state.copy(hydrationEndHour = event.hour)
+
+            is SettingsEvent.SoundEffectsToggled ->
+                state.copy(soundEffectsEnabled = event.enabled)
+
+            is SettingsEvent.SoundVolumeChanged ->
+                state.copy(soundEffectsVolume = event.percent)
 
             is SettingsEvent.ShowPrivacyDialog ->
                 state.copy(showPrivacyDialog = true)

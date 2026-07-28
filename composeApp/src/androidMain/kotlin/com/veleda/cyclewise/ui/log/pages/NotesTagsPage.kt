@@ -46,6 +46,8 @@ import androidx.compose.ui.text.style.TextAlign
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.models.CustomTag
 import com.veleda.cyclewise.domain.models.CustomTagLog
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.log.MAX_NAME_LENGTH
 import com.veleda.cyclewise.ui.log.MAX_NOTE_LENGTH
 import com.veleda.cyclewise.ui.log.components.SectionCard
@@ -99,6 +101,7 @@ internal fun NotesTagsPage(
     onEditDismissed: () -> Unit = {},
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     var showHelp by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
@@ -146,7 +149,7 @@ internal fun NotesTagsPage(
         }
 
         FilledTonalButton(
-            onClick = onDone,
+            onClick = { sounds.play(SoundEffect.TAP); onDone() },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.daily_log_done_button))
@@ -226,6 +229,7 @@ internal fun CustomTagLogger(
     onDeleteClicked: (CustomTag) -> Unit = {},
     onEditDismissed: () -> Unit = {},
 ) {
+    val sounds = LocalSoundEffects.current
     var newTagName by rememberSaveable { mutableStateOf("") }
 
     Column(verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.md)) {
@@ -242,7 +246,10 @@ internal fun CustomTagLogger(
                             label = tag.name,
                             selected = isSelected,
                             testTag = "chip-${tag.name.uppercase()}",
-                            onClick = { onToggleCustomTag(tag) },
+                            onClick = {
+                                sounds.play(if (isSelected) SoundEffect.TOGGLE_OFF else SoundEffect.TOGGLE_ON)
+                                onToggleCustomTag(tag)
+                            },
                             onLongClick = { onCustomTagLongPressed(tag) },
                             onRenameAction = { onRenameClicked(tag) },
                             onDeleteAction = { onDeleteClicked(tag) },
@@ -298,6 +305,7 @@ internal fun CustomTagLogger(
             trailingIcon = {
                 IconButton(
                     onClick = {
+                        sounds.play(SoundEffect.TAP)
                         onCreateAndAddCustomTag(newTagName)
                         newTagName = ""
                     },

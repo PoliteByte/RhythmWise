@@ -62,6 +62,8 @@ import com.veleda.cyclewise.ui.log.DailyLogViewModel
 import com.veleda.cyclewise.settings.AppSettings
 import com.veleda.cyclewise.ui.auth.PassphraseViewModel
 import com.veleda.cyclewise.reminders.ReminderScheduler
+import com.veleda.cyclewise.sound.SoundEffectPlayer
+import com.veleda.cyclewise.sound.SoundPoolSoundEffectPlayer
 import com.veleda.cyclewise.ui.insights.InsightsViewModel
 import com.veleda.cyclewise.ui.settings.SettingsViewModel
 import kotlinx.datetime.LocalDate
@@ -235,6 +237,8 @@ val appModule = module {
     single { LockedWaterDraft(androidContext()) }
 
     single { ReminderScheduler(androidContext()) }
+
+    single<SoundEffectPlayer> { SoundPoolSoundEffectPlayer(androidContext(), get()) }
 
     single<EducationalContentProvider> {
         StaticEducationalContentProvider(EducationalContentLoader.load(androidContext()))

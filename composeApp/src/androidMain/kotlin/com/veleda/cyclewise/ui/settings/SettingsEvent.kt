@@ -196,6 +196,14 @@ sealed interface SettingsEvent {
     /** User changed the hydration active window end hour. */
     data class HydrationEndHourChanged(val hour: Int) : SettingsEvent
 
+    // ── Notifications (page 3) — Sound effects ─────────────────────
+
+    /** User toggled the UI sound effects switch. */
+    data class SoundEffectsToggled(val enabled: Boolean) : SettingsEvent
+
+    /** User changed the UI sound effects volume slider (0–100 percent). */
+    data class SoundVolumeChanged(val percent: Int) : SettingsEvent
+
     // ── About (page 4) — Dialogs ───────────────────────────────────
 
     /** User tapped the About list item to show the about dialog. */

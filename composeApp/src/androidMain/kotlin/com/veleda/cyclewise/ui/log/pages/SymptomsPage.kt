@@ -62,6 +62,8 @@ import androidx.compose.ui.unit.dp
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.models.Symptom
 import com.veleda.cyclewise.domain.models.SymptomLog
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.components.HelpDialog
 import com.veleda.cyclewise.ui.log.MAX_NAME_LENGTH
 import com.veleda.cyclewise.ui.log.components.SectionCard
@@ -113,6 +115,7 @@ internal fun SymptomsPage(
     onEditDismissed: () -> Unit = {},
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     var showHelp by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
@@ -151,7 +154,7 @@ internal fun SymptomsPage(
         }
 
         FilledTonalButton(
-            onClick = onDone,
+            onClick = { sounds.play(SoundEffect.TAP); onDone() },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.daily_log_done_button))
@@ -230,6 +233,7 @@ internal fun SymptomLogger(
     onDeleteClicked: (Symptom) -> Unit = {},
     onEditDismissed: () -> Unit = {},
 ) {
+    val sounds = LocalSoundEffects.current
     var newSymptomName by rememberSaveable { mutableStateOf("") }
 
     Column(verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.md)) {
@@ -246,7 +250,10 @@ internal fun SymptomLogger(
                             label = symptom.name,
                             selected = isSelected,
                             testTag = "chip-${symptom.name.uppercase()}",
-                            onClick = { onToggleSymptom(symptom) },
+                            onClick = {
+                                sounds.play(if (isSelected) SoundEffect.TOGGLE_OFF else SoundEffect.TOGGLE_ON)
+                                onToggleSymptom(symptom)
+                            },
                             onLongClick = { onSymptomLongPressed(symptom) },
                             onRenameAction = { onRenameClicked(symptom) },
                             onDeleteAction = { onDeleteClicked(symptom) },
@@ -304,6 +311,7 @@ internal fun SymptomLogger(
             trailingIcon = {
                 IconButton(
                     onClick = {
+                        sounds.play(SoundEffect.TAP)
                         onCreateAndAddSymptom(newSymptomName)
                         newSymptomName = ""
                     },

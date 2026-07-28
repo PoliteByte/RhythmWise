@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import com.veleda.cyclewise.BuildConfig
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.usecases.DebugSeederUseCase
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.components.MedicalDisclaimer
 import com.veleda.cyclewise.ui.settings.AboutSettingsState
 import com.veleda.cyclewise.ui.settings.SettingsEvent
@@ -55,6 +57,7 @@ internal fun AboutPage(
     onSeedDebugData: (() -> DebugSeederUseCase?)? = null,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -78,7 +81,10 @@ internal fun AboutPage(
                 trailingContent = {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                 },
-                modifier = Modifier.clickable { onEvent(SettingsEvent.ShowAboutDialog) }
+                modifier = Modifier.clickable {
+                    sounds.play(SoundEffect.TAP)
+                    onEvent(SettingsEvent.ShowAboutDialog)
+                }
             )
         }
 
@@ -118,7 +124,10 @@ internal fun AboutPage(
                 trailingContent = {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                 },
-                modifier = Modifier.clickable { onEvent(SettingsEvent.ShowPrivacyPolicyDialog) }
+                modifier = Modifier.clickable {
+                    sounds.play(SoundEffect.TAP)
+                    onEvent(SettingsEvent.ShowPrivacyPolicyDialog)
+                }
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = dims.md))
             ListItem(
@@ -126,7 +135,10 @@ internal fun AboutPage(
                 trailingContent = {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                 },
-                modifier = Modifier.clickable { onEvent(SettingsEvent.ShowTermsOfServiceDialog) }
+                modifier = Modifier.clickable {
+                    sounds.play(SoundEffect.TAP)
+                    onEvent(SettingsEvent.ShowTermsOfServiceDialog)
+                }
             )
         }
 
@@ -174,7 +186,10 @@ internal fun AboutPage(
                 )
                 Spacer(Modifier.height(dims.sm))
                 FilledTonalButton(
-                    onClick = { onEvent(SettingsEvent.ResetTutorialHints) },
+                    onClick = {
+                        sounds.play(SoundEffect.TAP)
+                        onEvent(SettingsEvent.ResetTutorialHints)
+                    },
                 ) {
                     Text(stringResource(R.string.settings_reset_hints))
                 }

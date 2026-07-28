@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.settings.AUTOLOCK_IMMEDIATE_MINUTES
 import com.veleda.cyclewise.settings.AUTOLOCK_NEVER_MINUTES
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.backup.BackupErrorDialog
 import com.veleda.cyclewise.ui.backup.BackupMetadataPreviewDialog
 import com.veleda.cyclewise.ui.backup.BackupOverwriteConfirmDialog
@@ -76,6 +78,7 @@ internal fun SecurityPage(
     onImportClicked: () -> Unit,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     Column(
         modifier = Modifier
@@ -120,6 +123,9 @@ internal fun SecurityPage(
                             ) {
                                 showNeverConfirmDialog = true
                             } else {
+                                if (state.autolockMinutes != minutes) {
+                                    sounds.play(SoundEffect.SELECT)
+                                }
                                 onEvent(SettingsEvent.AutolockChanged(minutes))
                             }
                         },
@@ -179,7 +185,10 @@ internal fun SecurityPage(
             Spacer(Modifier.height(dims.sm))
             FilledTonalButton(
                 enabled = isSessionActive,
-                onClick = { onEvent(SettingsEvent.ChangePassphraseRequested) },
+                onClick = {
+                    sounds.play(SoundEffect.TAP)
+                    onEvent(SettingsEvent.ChangePassphraseRequested)
+                },
                 modifier = Modifier.padding(horizontal = dims.md)
             ) {
                 Text(stringResource(R.string.settings_change_passphrase))
@@ -202,7 +211,10 @@ internal fun SecurityPage(
             Spacer(Modifier.height(dims.sm))
             FilledTonalButton(
                 enabled = isSessionActive && !state.isExporting,
-                onClick = onExportClicked,
+                onClick = {
+                    sounds.play(SoundEffect.TAP)
+                    onExportClicked()
+                },
                 modifier = Modifier.padding(horizontal = dims.md)
             ) {
                 Icon(
@@ -215,7 +227,10 @@ internal fun SecurityPage(
             }
             Spacer(Modifier.height(dims.sm))
             FilledTonalButton(
-                onClick = onImportClicked,
+                onClick = {
+                    sounds.play(SoundEffect.TAP)
+                    onImportClicked()
+                },
                 modifier = Modifier.padding(horizontal = dims.md)
             ) {
                 Icon(
@@ -324,7 +339,10 @@ internal fun SecurityPage(
             )
             Spacer(Modifier.height(dims.sm))
             Button(
-                onClick = { onEvent(SettingsEvent.DeleteAllDataRequested) },
+                onClick = {
+                    sounds.play(SoundEffect.TAP)
+                    onEvent(SettingsEvent.DeleteAllDataRequested)
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error,
                     contentColor = MaterialTheme.colorScheme.onError,

@@ -49,6 +49,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.backup.BackupErrorDialog
 import com.veleda.cyclewise.ui.backup.BackupMetadataPreviewDialog
 import com.veleda.cyclewise.ui.backup.BackupOverwriteConfirmDialog
@@ -85,6 +87,7 @@ fun PassphraseScreen(
 ) {
     val viewModel: PassphraseViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
+    val sounds = LocalSoundEffects.current
     var showSetupSuccess by remember { mutableStateOf(false) }
 
     // SAF launcher for import (open an existing file)
@@ -99,7 +102,10 @@ fun PassphraseScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is PassphraseEffect.NavigateToTracker -> onPassphraseEntered()
-                is PassphraseEffect.SetupComplete -> { showSetupSuccess = true }
+                is PassphraseEffect.SetupComplete -> {
+                    sounds.play(SoundEffect.SUCCESS)
+                    showSetupSuccess = true
+                }
                 is PassphraseEffect.ShowError -> {
                     // ShowError is handled within each sub-screen
                 }
@@ -157,6 +163,7 @@ internal fun UnlockScreen(
     effect: SharedFlow<PassphraseEffect>,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     var passphrase by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -182,6 +189,7 @@ internal fun UnlockScreen(
     LaunchedEffect(Unit) {
         effect.collect { e ->
             if (e is PassphraseEffect.ShowError) {
+                sounds.play(SoundEffect.ERROR)
                 errorMessage = errorString
             }
         }
@@ -189,6 +197,7 @@ internal fun UnlockScreen(
 
     val submit = {
         if (passphrase.isNotBlank() && !uiState.isUnlocking) {
+            sounds.play(SoundEffect.TAP)
             onEvent(PassphraseEvent.UnlockClicked(passphrase))
         }
     }
@@ -248,7 +257,10 @@ internal fun UnlockScreen(
                     PasswordVisualTransformation()
                 },
                 trailingIcon = {
-                    TextButton(onClick = { passwordVisible = !passwordVisible }) {
+                    TextButton(onClick = {
+                        sounds.play(SoundEffect.TAP_LIGHT)
+                        passwordVisible = !passwordVisible
+                    }) {
                         Text(
                             text = stringResource(
                                 if (passwordVisible) R.string.passphrase_hide
@@ -301,7 +313,10 @@ internal fun UnlockScreen(
             Spacer(Modifier.height(dims.md))
 
             // Collapsible water tracker
-            TextButton(onClick = { showWater = !showWater }) {
+            TextButton(onClick = {
+                sounds.play(SoundEffect.TAP_LIGHT)
+                showWater = !showWater
+            }) {
                 Text(stringResource(R.string.passphrase_water_toggle))
             }
             AnimatedVisibility(visible = showWater) {
@@ -319,7 +334,10 @@ internal fun UnlockScreen(
 
             // Import backup button (subtle, de-emphasized)
             TextButton(
-                onClick = { onEvent(PassphraseEvent.ImportBackupClicked) },
+                onClick = {
+                    sounds.play(SoundEffect.TAP)
+                    onEvent(PassphraseEvent.ImportBackupClicked)
+                },
                 modifier = Modifier.testTag("import-backup-button")
             ) {
                 Text(

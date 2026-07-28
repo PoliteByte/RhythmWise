@@ -54,6 +54,10 @@ private val CACHED_PREDICTED_PERIOD_DATE = stringPreferencesKey("cached_predicte
 private val THEME_MODE = stringPreferencesKey("theme_mode")
 private val SEED_MANIFEST_JSON = stringPreferencesKey("seed_manifest_json")
 
+// --- Sound preferences ---
+private val SOUND_EFFECTS_ENABLED = booleanPreferencesKey("sound_effects_enabled")
+private val SOUND_EFFECTS_VOLUME = intPreferencesKey("sound_effects_volume")
+
 /**
  * [AppSettings.autolockMinutes] sentinel: never auto-lock. The session stays
  * open until the user taps Lock Now or the process dies; cold starts still
@@ -63,6 +67,12 @@ const val AUTOLOCK_NEVER_MINUTES = -1
 
 /** [AppSettings.autolockMinutes] sentinel: lock every time the app returns to the foreground. */
 const val AUTOLOCK_IMMEDIATE_MINUTES = 0
+
+/**
+ * [AppSettings.soundEffectsVolume] default. The raw sound assets are authored to feel
+ * subtle at this level (see `tools/generate_ui_sounds.py`), leaving headroom to 100%.
+ */
+const val SOUND_VOLUME_DEFAULT_PERCENT = 80
 
 /**
  * DataStore-backed wrapper for user-configurable app preferences.
@@ -105,6 +115,8 @@ const val AUTOLOCK_IMMEDIATE_MINUTES = 0
  * @property heatmapFlowIntensityColor    Custom hex color for the Flow Intensity heatmap metric (6-char, no '#'; default: "7B1FA2").
  * @property heatmapMedicationCountColor  Custom hex color for the Medication Count heatmap metric (6-char, no '#'; default: "388E3C").
  * @property themeMode                     User-selected theme mode key ("system", "light", or "dark"; default: "system").
+ * @property soundEffectsEnabled           Whether UI sound effects play on interactions (default: true).
+ * @property soundEffectsVolume            UI sound effects volume percent, 0–100 (default: [SOUND_VOLUME_DEFAULT_PERCENT]).
  */
 class AppSettings(private val context: Context) {
     val autolockMinutes = context.dataStore.data.map { prefs -> prefs[AUTOLOCK_MIN] ?: 10 }
@@ -406,6 +418,26 @@ class AppSettings(private val context: Context) {
     /** Persists the user's selected theme mode. */
     suspend fun setThemeMode(mode: String) {
         context.dataStore.edit { it[THEME_MODE] = mode }
+    }
+
+    // ── Sound preferences ─────────────────────────────────────────────
+
+    /** Whether UI sound effects play on interactions. */
+    val soundEffectsEnabled: Flow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[SOUND_EFFECTS_ENABLED] ?: true }
+
+    /** Persists the user's preference for UI sound effects. */
+    suspend fun setSoundEffectsEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[SOUND_EFFECTS_ENABLED] = enabled }
+    }
+
+    /** UI sound effects volume percent (0–100). */
+    val soundEffectsVolume: Flow<Int> = context.dataStore.data
+        .map { prefs -> prefs[SOUND_EFFECTS_VOLUME] ?: SOUND_VOLUME_DEFAULT_PERCENT }
+
+    /** Persists the UI sound effects volume percent (0–100). */
+    suspend fun setSoundEffectsVolume(percent: Int) {
+        context.dataStore.edit { it[SOUND_EFFECTS_VOLUME] = percent }
     }
 
     // ── Seed manifest (tutorial cleanup) ──────────────────────────────

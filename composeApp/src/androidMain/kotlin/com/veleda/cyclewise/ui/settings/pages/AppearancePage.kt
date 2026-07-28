@@ -27,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.settings.PhaseVisibilitySettings
 import com.veleda.cyclewise.ui.settings.AppearanceSettingsState
 import com.veleda.cyclewise.ui.settings.SettingsEvent
@@ -45,6 +47,7 @@ internal fun AppearancePage(
     onEvent: (SettingsEvent) -> Unit,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     Column(
         modifier = Modifier
@@ -69,7 +72,10 @@ internal fun AppearancePage(
                             index = index,
                             count = modes.size
                         ),
-                        onClick = { onEvent(SettingsEvent.ThemeModeChanged(mode)) },
+                        onClick = {
+                            if (state.themeMode != mode) sounds.play(SoundEffect.SELECT)
+                            onEvent(SettingsEvent.ThemeModeChanged(mode))
+                        },
                         selected = state.themeMode == mode,
                         label = {
                             Text(
@@ -93,7 +99,10 @@ internal fun AppearancePage(
                 trailingContent = {
                     Switch(
                         checked = state.showMood,
-                        onCheckedChange = { onEvent(SettingsEvent.ShowMoodToggled(it)) }
+                        onCheckedChange = {
+                            sounds.play(if (it) SoundEffect.TOGGLE_ON else SoundEffect.TOGGLE_OFF)
+                            onEvent(SettingsEvent.ShowMoodToggled(it))
+                        }
                     )
                 }
             )
@@ -103,7 +112,10 @@ internal fun AppearancePage(
                 trailingContent = {
                     Switch(
                         checked = state.showEnergy,
-                        onCheckedChange = { onEvent(SettingsEvent.ShowEnergyToggled(it)) }
+                        onCheckedChange = {
+                            sounds.play(if (it) SoundEffect.TOGGLE_ON else SoundEffect.TOGGLE_OFF)
+                            onEvent(SettingsEvent.ShowEnergyToggled(it))
+                        }
                     )
                 }
             )
@@ -113,7 +125,10 @@ internal fun AppearancePage(
                 trailingContent = {
                     Switch(
                         checked = state.showLibido,
-                        onCheckedChange = { onEvent(SettingsEvent.ShowLibidoToggled(it)) }
+                        onCheckedChange = {
+                            sounds.play(if (it) SoundEffect.TOGGLE_ON else SoundEffect.TOGGLE_OFF)
+                            onEvent(SettingsEvent.ShowLibidoToggled(it))
+                        }
                     )
                 }
             )
@@ -162,7 +177,9 @@ internal fun AppearancePage(
             Slider(
                 value = state.topSymptomsCount.toFloat(),
                 onValueChange = { newValue ->
-                    onEvent(SettingsEvent.TopSymptomsCountChanged(newValue.roundToInt()))
+                    val rounded = newValue.roundToInt()
+                    if (rounded != state.topSymptomsCount) sounds.play(SoundEffect.TICK)
+                    onEvent(SettingsEvent.TopSymptomsCountChanged(rounded))
                 },
                 valueRange = 1f..5f,
                 steps = 3,
@@ -196,7 +213,11 @@ internal fun AppearancePage(
                     value = (cycle.typicalCycleLengthDays
                         ?: CycleLengthResolver.DEFAULT_CYCLE_LENGTH_DAYS).toFloat(),
                     onValueChange = {
-                        onEvent(SettingsEvent.TypicalCycleLengthChanged(it.roundToInt()))
+                        val rounded = it.roundToInt()
+                        val current = cycle.typicalCycleLengthDays
+                            ?: CycleLengthResolver.DEFAULT_CYCLE_LENGTH_DAYS
+                        if (rounded != current) sounds.play(SoundEffect.TICK)
+                        onEvent(SettingsEvent.TypicalCycleLengthChanged(rounded))
                     },
                     valueRange = CycleSettings.MIN_CYCLE_LENGTH_DAYS.toFloat()..
                         CycleSettings.MAX_CYCLE_LENGTH_DAYS.toFloat(),
@@ -223,7 +244,9 @@ internal fun AppearancePage(
                 Slider(
                     value = cycle.defaultPeriodLengthDays.toFloat(),
                     onValueChange = {
-                        onEvent(SettingsEvent.DefaultPeriodLengthChanged(it.roundToInt()))
+                        val rounded = it.roundToInt()
+                        if (rounded != cycle.defaultPeriodLengthDays) sounds.play(SoundEffect.TICK)
+                        onEvent(SettingsEvent.DefaultPeriodLengthChanged(rounded))
                     },
                     valueRange = CycleSettings.MIN_PERIOD_LENGTH_DAYS.toFloat()..
                         CycleSettings.MAX_PERIOD_LENGTH_DAYS.toFloat(),

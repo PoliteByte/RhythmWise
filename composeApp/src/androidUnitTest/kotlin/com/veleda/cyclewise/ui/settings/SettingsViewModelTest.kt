@@ -12,6 +12,7 @@ import com.veleda.cyclewise.ui.backup.ImportStep
 import com.veleda.cyclewise.session.ChangePassphraseResult
 import com.veleda.cyclewise.session.SessionManager
 import com.veleda.cyclewise.settings.AppSettings
+import com.veleda.cyclewise.settings.SOUND_VOLUME_DEFAULT_PERCENT
 import com.veleda.cyclewise.ui.coachmark.HintPreferences
 import com.veleda.cyclewise.ui.theme.ThemeMode
 import com.veleda.cyclewise.ui.tracker.CyclePhaseColors
@@ -100,6 +101,8 @@ class SettingsViewModelTest {
         every { mockAppSettings.reminderHydrationFrequencyHours } returns flowOf(3)
         every { mockAppSettings.reminderHydrationStartHour } returns flowOf(8)
         every { mockAppSettings.reminderHydrationEndHour } returns flowOf(20)
+        every { mockAppSettings.soundEffectsEnabled } returns flowOf(true)
+        every { mockAppSettings.soundEffectsVolume } returns flowOf(SOUND_VOLUME_DEFAULT_PERCENT)
 
         // Stub android.util.Log so Log.e() returns 0 instead of throwing
         // "Method e in android.util.Log not mocked" in non-Robolectric tests.
@@ -399,6 +402,50 @@ class SettingsViewModelTest {
         coVerify(atLeast = 1) { mockAppSettings.setFollicularColor(CyclePhaseColors.DEFAULT_FOLLICULAR_HEX) }
         coVerify(atLeast = 1) { mockAppSettings.setOvulationColor(CyclePhaseColors.DEFAULT_OVULATION_HEX) }
         coVerify(atLeast = 1) { mockAppSettings.setLutealColor(CyclePhaseColors.DEFAULT_LUTEAL_HEX) }
+    }
+
+    // ── Sound effects ────────────────────────────────────────────────
+
+    @Test
+    fun `init WHEN created THEN soundDefaultsAreEnabledAtDefaultVolume`() = runTest {
+        // GIVEN/WHEN — ViewModel created with default AppSettings flows
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // THEN — sounds on at the authored default volume
+        val state = viewModel.notificationState.value
+        assertTrue(state.soundEffectsEnabled)
+        assertEquals(SOUND_VOLUME_DEFAULT_PERCENT, state.soundEffectsVolume)
+    }
+
+    @Test
+    fun `onEvent SoundEffectsToggled WHEN disabled THEN updatesStateAndPersists`() = runTest {
+        // GIVEN — ViewModel with sound effects enabled
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // WHEN — sound effects disabled
+        viewModel.onEvent(SettingsEvent.SoundEffectsToggled(false))
+        advanceUntilIdle()
+
+        // THEN — state updated and persisted
+        assertFalse(viewModel.notificationState.value.soundEffectsEnabled)
+        coVerify(atLeast = 1) { mockAppSettings.setSoundEffectsEnabled(false) }
+    }
+
+    @Test
+    fun `onEvent SoundVolumeChanged WHEN changed THEN updatesStateAndPersists`() = runTest {
+        // GIVEN — ViewModel with the default volume
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // WHEN — volume dragged to 45%
+        viewModel.onEvent(SettingsEvent.SoundVolumeChanged(45))
+        advanceUntilIdle()
+
+        // THEN — state updated and persisted
+        assertEquals(45, viewModel.notificationState.value.soundEffectsVolume)
+        coVerify(atLeast = 1) { mockAppSettings.setSoundEffectsVolume(45) }
     }
 
     // ── Period prediction reminder ───────────────────────────────────

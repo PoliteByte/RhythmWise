@@ -53,6 +53,9 @@ import androidx.compose.ui.unit.dp
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.CycleLengthResolver
 import com.veleda.cyclewise.domain.models.CycleSettings
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.PagerSoundEffect
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.components.ContentContainer
 import com.veleda.cyclewise.ui.components.LottieAnimationBox
 import com.veleda.cyclewise.ui.components.MarkdownText
@@ -86,8 +89,12 @@ fun SetupScreen(
     onEvent: (PassphraseEvent) -> Unit,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     val pagerState = rememberPagerState(pageCount = { SETUP_PAGE_COUNT })
     val coroutineScope = rememberCoroutineScope()
+
+    // Whoosh once per settled page change (swipes and button-driven scrolls alike)
+    PagerSoundEffect(pagerState)
 
     // Predictive back: navigate to the previous pager page instead of exiting the app.
     // Disabled on page 0 so the system handles back normally (minimize/exit).
@@ -172,6 +179,7 @@ fun SetupScreen(
                 if (pagerState.currentPage > 0) {
                     TextButton(
                         onClick = {
+                            sounds.play(SoundEffect.TAP_LIGHT)
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(pagerState.currentPage - 1)
                             }
@@ -188,6 +196,7 @@ fun SetupScreen(
                 if (pagerState.currentPage < SETUP_PAGE_COUNT - 1) {
                     Button(
                         onClick = {
+                            sounds.play(SoundEffect.TAP)
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(pagerState.currentPage + 1)
                             }
@@ -397,6 +406,7 @@ private fun QuestionSlider(
     onChanged: (Int?) -> Unit,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = if (pendingDays != null) {
@@ -412,7 +422,12 @@ private fun QuestionSlider(
         Spacer(Modifier.height(dims.sm))
         Slider(
             value = (pendingDays ?: defaultDays).toFloat(),
-            onValueChange = { onChanged(it.roundToInt()) },
+            onValueChange = {
+                val days = it.roundToInt()
+                // Tick only when the drag crosses into a new step, not on every sample
+                if (days != pendingDays) sounds.play(SoundEffect.TICK)
+                onChanged(days)
+            },
             valueRange = range.first.toFloat()..range.last.toFloat(),
             steps = range.last - range.first - 1,
             modifier = Modifier
@@ -422,7 +437,10 @@ private fun QuestionSlider(
         if (pendingDays != null) {
             Spacer(Modifier.height(dims.sm))
             TextButton(
-                onClick = { onChanged(null) },
+                onClick = {
+                    sounds.play(SoundEffect.TAP_LIGHT)
+                    onChanged(null)
+                },
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
                 Text(stringResource(R.string.setup_cycle_length_skip))

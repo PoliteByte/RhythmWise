@@ -54,6 +54,8 @@ import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import com.veleda.cyclewise.domain.models.CyclePhase
 import com.veleda.cyclewise.settings.AppSettings
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.coachmark.CoachMarkOverlay
 import com.veleda.cyclewise.ui.coachmark.CoachMarkState
 import com.veleda.cyclewise.ui.coachmark.HintKey
@@ -99,6 +101,7 @@ import java.time.YearMonth as JavaYearMonth
 @Composable
 fun TrackerScreen(navController: NavController) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     val viewModel: TrackerViewModel = koinInject(scope = getKoin().getScope("session"))
     val uiState by viewModel.uiState.collectAsState()
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
@@ -278,9 +281,11 @@ fun TrackerScreen(navController: NavController) {
                     }
                 }
                 is TrackerEffect.PeriodMarked -> {
+                    sounds.play(SoundEffect.SUCCESS)
                     showSuccess = true
                 }
                 is TrackerEffect.PeriodAutoFilled -> {
+                    sounds.play(SoundEffect.SUCCESS)
                     showSuccess = true
                     // Undo snackbar for the auto-filled range (issue #144)
                     val filledDays = effect.startDate.daysUntil(effect.endDate) + 1
@@ -415,6 +420,7 @@ fun TrackerScreen(navController: NavController) {
             ) {
                 FilledTonalButton(
                     onClick = {
+                        sounds.play(SoundEffect.TAP)
                         coroutineScope.launch {
                             calendarState.animateScrollToMonth(currentMonth)
                         }
@@ -428,14 +434,17 @@ fun TrackerScreen(navController: NavController) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     HelpButton(
-                        onClick = { showTrackerHelp = true },
+                        onClick = { sounds.play(SoundEffect.TAP_LIGHT); showTrackerHelp = true },
                         contentDescription = stringResource(
                             R.string.help_button_cd,
                             stringResource(R.string.help_tracker_title),
                         ),
                     )
                     InfoButton(
-                        onClick = { viewModel.onEvent(TrackerEvent.ShowEducationalSheet("CyclePhase")) },
+                        onClick = {
+                            sounds.play(SoundEffect.TAP_LIGHT)
+                            viewModel.onEvent(TrackerEvent.ShowEducationalSheet("CyclePhase"))
+                        },
                         contentDescription = stringResource(
                             R.string.educational_info_button_cd,
                             stringResource(R.string.tracker_phase_label),

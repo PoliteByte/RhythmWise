@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.veleda.cyclewise.domain.models.ArticleCategory
 import com.veleda.cyclewise.domain.models.EducationalArticle
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.components.MarkdownText
 import com.veleda.cyclewise.ui.components.SourceAttribution
 import com.veleda.cyclewise.ui.insights.cards.AccentedInsightCard
@@ -38,6 +40,7 @@ internal fun LearnArticleCard(
     modifier: Modifier = Modifier,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     val accentColor = when (article.category) {
         ArticleCategory.CYCLE_BASICS -> MaterialTheme.colorScheme.primary
@@ -48,7 +51,12 @@ internal fun LearnArticleCard(
 
     AccentedInsightCard(
         accentColor = accentColor,
-        modifier = modifier.clickable(onClick = onToggle),
+        modifier = modifier.clickable(
+            onClick = {
+                sounds.play(SoundEffect.TAP_LIGHT)
+                onToggle()
+            },
+        ),
     ) {
         Text(
             text = article.title,

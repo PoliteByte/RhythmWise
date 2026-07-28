@@ -51,6 +51,8 @@ import com.veleda.cyclewise.domain.models.Medication
 import com.veleda.cyclewise.domain.models.PeriodColor
 import com.veleda.cyclewise.domain.models.PeriodConsistency
 import com.veleda.cyclewise.domain.models.Symptom
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.components.flowIntensityLabel
 import com.veleda.cyclewise.ui.components.moodFaceIcon
 import com.veleda.cyclewise.ui.theme.LocalDimensions
@@ -97,6 +99,7 @@ internal fun LogSummarySheetContent(
     onViewFullLogClick: (LocalDate) -> Unit
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     Column(
         modifier = Modifier
@@ -115,14 +118,14 @@ internal fun LogSummarySheetContent(
             )
             Row {
                 IconButton(
-                    onClick = { onEditClick(log.entry.entryDate) },
+                    onClick = { sounds.play(SoundEffect.TAP); onEditClick(log.entry.entryDate) },
                     modifier = Modifier.testTag("edit-log-button")
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.tracker_edit_log))
                 }
                 if (periodId != null) {
                     IconButton(
-                        onClick = { onDeleteClick(periodId) },
+                        onClick = { sounds.play(SoundEffect.TAP); onDeleteClick(periodId) },
                         modifier = Modifier.testTag("delete-period-button")
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.tracker_delete_period))
@@ -271,7 +274,7 @@ internal fun LogSummarySheetContent(
         )
 
         FilledTonalButton(
-            onClick = { onViewFullLogClick(log.entry.entryDate) },
+            onClick = { sounds.play(SoundEffect.TAP); onViewFullLogClick(log.entry.entryDate) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(stringResource(R.string.tracker_view_full_log))

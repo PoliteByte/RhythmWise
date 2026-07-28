@@ -44,6 +44,9 @@ import com.veleda.cyclewise.settings.AppSettings
 import com.veleda.cyclewise.settings.parseSeedManifest
 import com.veleda.cyclewise.settings.runSeedCleanupIfNeeded
 import com.veleda.cyclewise.settings.toJson
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.PagerSoundEffect
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.tracker.TRACKER_HINTS
 import com.veleda.cyclewise.ui.coachmark.CoachMarkOverlay
 import com.veleda.cyclewise.ui.coachmark.CoachMarkState
@@ -122,6 +125,11 @@ fun DailyLogScreen(
     val uiState by viewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
     val coroutineScope = rememberCoroutineScope()
+    val sounds = LocalSoundEffects.current
+
+    // Swipe whoosh on every settled page change — covers both user swipes and the
+    // programmatic scrolls from tab clicks, so the tab handlers stay silent.
+    PagerSoundEffect(pagerState)
 
     // Coach mark system
     val hintPreferences: HintPreferences = koin.get()
@@ -308,6 +316,7 @@ fun DailyLogScreen(
 
             LaunchedEffect(uiState.errorMessage) {
                 val message = uiState.errorMessage ?: return@LaunchedEffect
+                sounds.play(SoundEffect.ERROR)
                 snackbarHostState.showSnackbar(message)
                 viewModel.onEvent(DailyLogEvent.ErrorDismissed)
             }

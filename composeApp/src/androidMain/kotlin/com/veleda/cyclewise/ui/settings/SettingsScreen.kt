@@ -34,6 +34,9 @@ import com.veleda.cyclewise.ui.settings.pages.AppearancePage
 import com.veleda.cyclewise.ui.settings.pages.ColorsPage
 import com.veleda.cyclewise.domain.usecases.DebugSeederUseCase
 import com.veleda.cyclewise.session.SessionManager
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.PagerSoundEffect
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.settings.pages.NotificationsPage
 import com.veleda.cyclewise.ui.settings.pages.SecurityPage
 import com.veleda.cyclewise.ui.theme.LocalDimensions
@@ -71,6 +74,7 @@ fun SettingsScreen(navController: NavController) {
     val notificationState by viewModel.notificationState.collectAsState()
     val aboutState by viewModel.aboutState.collectAsState()
     val context = LocalContext.current
+    val sounds = LocalSoundEffects.current
     val passphraseChangedMessage = stringResource(R.string.settings_change_passphrase_success)
     val exportSuccessMessage = stringResource(R.string.settings_export_success)
     val importSuccessMessage = stringResource(R.string.backup_import_success)
@@ -99,6 +103,7 @@ fun SettingsScreen(navController: NavController) {
                 }
 
                 is SettingsEffect.PassphraseChanged -> {
+                    sounds.play(SoundEffect.SUCCESS)
                     Toast.makeText(context, passphraseChangedMessage, Toast.LENGTH_SHORT).show()
                     navController.navigate(NavRoute.Passphrase.route) {
                         popUpTo(0) { inclusive = true }
@@ -114,10 +119,12 @@ fun SettingsScreen(navController: NavController) {
                 }
 
                 is SettingsEffect.ExportSuccess -> {
+                    sounds.play(SoundEffect.SUCCESS)
                     Toast.makeText(context, exportSuccessMessage, Toast.LENGTH_SHORT).show()
                 }
 
                 is SettingsEffect.BackupImported -> {
+                    sounds.play(SoundEffect.SUCCESS)
                     Toast.makeText(context, importSuccessMessage, Toast.LENGTH_LONG).show()
                     navController.navigate(NavRoute.Passphrase.route) {
                         popUpTo(0) { inclusive = true }
@@ -193,6 +200,10 @@ internal fun SettingsContent(
     val dims = LocalDimensions.current
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
     val coroutineScope = rememberCoroutineScope()
+
+    // Whoosh on every settled page change (swipes and tab-driven animation alike),
+    // which is why the tab onClick handlers below stay silent.
+    PagerSoundEffect(pagerState)
 
     // Predictive back: return to the Security page from any sub-tab.
     // Disabled on the Security page so the system handles back normally (navigate out).

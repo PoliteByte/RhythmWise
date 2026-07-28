@@ -37,6 +37,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.auth.WaterTrackerCounter
 import com.veleda.cyclewise.ui.components.moodFaceIcon
 import com.veleda.cyclewise.ui.coachmark.CoachMarkState
@@ -88,6 +90,7 @@ internal fun WellnessPage(
     activeHintKey: HintKey? = null,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     // During task walkthrough steps, only the target section is interactive.
     val walkthroughActive = activeHintKey != null
@@ -208,7 +211,7 @@ internal fun WellnessPage(
         }
 
         FilledTonalButton(
-            onClick = onDone,
+            onClick = { sounds.play(SoundEffect.TAP); onDone() },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.daily_log_done_button))
@@ -238,13 +241,17 @@ internal fun MoodSelector(
     onSelectionChanged: (Int?) -> Unit,
     enabled: Boolean = true,
 ) {
+    val sounds = LocalSoundEffects.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
         (1..5).forEach { score ->
             IconButton(
-                onClick = { onSelectionChanged(if (score == selectedMood) null else score) },
+                onClick = {
+                    sounds.play(if (score == selectedMood) SoundEffect.DESELECT else SoundEffect.SELECT)
+                    onSelectionChanged(if (score == selectedMood) null else score)
+                },
                 enabled = enabled,
             ) {
                 Icon(
@@ -290,13 +297,17 @@ internal fun ScoreSelector(
     filledIcon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Filled.Star,
     emptyIcon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Outlined.StarOutlined,
 ) {
+    val sounds = LocalSoundEffects.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
         (1..5).forEach { score ->
             IconButton(
-                onClick = { onSelectionChanged(if (score == selectedScore) null else score) },
+                onClick = {
+                    sounds.play(if (score == selectedScore) SoundEffect.DESELECT else SoundEffect.SELECT)
+                    onSelectionChanged(if (score == selectedScore) null else score)
+                },
                 enabled = enabled,
             ) {
                 val isSelected = score == selectedScore

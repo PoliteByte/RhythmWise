@@ -50,6 +50,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import kotlin.math.roundToInt
 
@@ -130,6 +132,7 @@ fun CoachMarkOverlay(
 
     val dims = LocalDimensions.current
     val density = LocalDensity.current
+    val sounds = LocalSoundEffects.current
 
     // Track the overlay's own position and size so we can translate root-coordinate
     // target bounds into overlay-local coordinates.
@@ -231,7 +234,10 @@ fun CoachMarkOverlay(
                 cardModifier.clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(),
-                    onClick = { state.advanceOrDismiss(allDefs) },
+                    onClick = {
+                        sounds.play(SoundEffect.TAP_LIGHT)
+                        state.advanceOrDismiss(allDefs)
+                    },
                 )
             } else {
                 cardModifier
@@ -291,6 +297,7 @@ fun CoachMarkOverlay(
                 ) {
                     TextButton(
                         onClick = {
+                            sounds.play(SoundEffect.TAP_LIGHT)
                             state.skipAll(allDefs)
                             onSkipAll()
                         },
@@ -307,6 +314,7 @@ fun CoachMarkOverlay(
                         val skipToastMessage = stringResource(active.def.skipToastRes!!)
                         TextButton(
                             onClick = {
+                                sounds.play(SoundEffect.TAP_LIGHT)
                                 state.skipToKey(active.def.skipTargetKey!!, allDefs)
                                 Toast.makeText(
                                     context,

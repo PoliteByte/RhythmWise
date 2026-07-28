@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -40,6 +41,8 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import com.veleda.cyclewise.domain.usecases.TutorialCleanupUseCase
 import com.veleda.cyclewise.session.SessionBus
 import com.veleda.cyclewise.settings.AppSettings
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffectPlayer
 import com.veleda.cyclewise.settings.runSeedCleanupIfNeeded
 import com.veleda.cyclewise.ui.coachmark.HintKey
 import com.veleda.cyclewise.ui.coachmark.HintPreferences
@@ -87,6 +90,7 @@ fun CycleWiseAppUI() {
         val seedManifestJson by appSettings.seedManifestJson.collectAsState(initial = "")
         val tutorialActive = seedManifestJson.isNotEmpty()
         val hintPreferences: HintPreferences = koin.get()
+        val soundEffects: SoundEffectPlayer = koin.get()
 
         // Autolock: navigate to passphrase screen when session is destroyed
         LaunchedEffect(Unit) {
@@ -118,94 +122,96 @@ fun CycleWiseAppUI() {
             }
         }
 
-        Scaffold(
-            bottomBar = {
-                if (currentRoute != NavRoute.Passphrase.route) {
-                    BottomNavBar(navController, enabled = !tutorialActive)
-                }
-            },
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            modifier = Modifier.fillMaxSize(),
-        ) { padding ->
-            NavHost(
-                navController = navController,
-                startDestination = NavRoute.Passphrase.route,
-                modifier = Modifier.padding(padding),
-                enterTransition = { fadeIn(tween(DEFAULT_TRANSITION_DURATION_MS)) },
-                exitTransition = { fadeOut(tween(DEFAULT_TRANSITION_DURATION_MS)) },
-                popEnterTransition = { fadeIn(tween(DEFAULT_TRANSITION_DURATION_MS)) },
-                popExitTransition = { fadeOut(tween(DEFAULT_TRANSITION_DURATION_MS)) },
-            ) {
-                composable(
-                    route = NavRoute.Passphrase.route,
-                    enterTransition = { fadeIn(tween(AUTH_TRANSITION_DURATION_MS)) },
-                    exitTransition = { fadeOut(tween(AUTH_TRANSITION_DURATION_MS)) },
-                    popEnterTransition = { EnterTransition.None },
-                    popExitTransition = { fadeOut(tween(AUTH_TRANSITION_DURATION_MS)) },
+        CompositionLocalProvider(LocalSoundEffects provides soundEffects) {
+            Scaffold(
+                bottomBar = {
+                    if (currentRoute != NavRoute.Passphrase.route) {
+                        BottomNavBar(navController, enabled = !tutorialActive)
+                    }
+                },
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                modifier = Modifier.fillMaxSize(),
+            ) { padding ->
+                NavHost(
+                    navController = navController,
+                    startDestination = NavRoute.Passphrase.route,
+                    modifier = Modifier.padding(padding),
+                    enterTransition = { fadeIn(tween(DEFAULT_TRANSITION_DURATION_MS)) },
+                    exitTransition = { fadeOut(tween(DEFAULT_TRANSITION_DURATION_MS)) },
+                    popEnterTransition = { fadeIn(tween(DEFAULT_TRANSITION_DURATION_MS)) },
+                    popExitTransition = { fadeOut(tween(DEFAULT_TRANSITION_DURATION_MS)) },
                 ) {
-                    PassphraseScreen {
-                        navController.navigate(NavRoute.DailyLogHome.route) {
-                            popUpTo(NavRoute.Passphrase.route) { inclusive = true }
+                    composable(
+                        route = NavRoute.Passphrase.route,
+                        enterTransition = { fadeIn(tween(AUTH_TRANSITION_DURATION_MS)) },
+                        exitTransition = { fadeOut(tween(AUTH_TRANSITION_DURATION_MS)) },
+                        popEnterTransition = { EnterTransition.None },
+                        popExitTransition = { fadeOut(tween(AUTH_TRANSITION_DURATION_MS)) },
+                    ) {
+                        PassphraseScreen {
+                            navController.navigate(NavRoute.DailyLogHome.route) {
+                                popUpTo(NavRoute.Passphrase.route) { inclusive = true }
+                            }
                         }
                     }
-                }
-                composable(NavRoute.DailyLogHome.route) {
-                    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-                    DailyLogScreen(
-                        date = today,
-                        showCycleStatus = true,
-                        onNavigateToTracker = {
-                            navController.navigate(NavRoute.Tracker.route) {
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        onDone = {
-                            navController.navigate(NavRoute.Tracker.route) {
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                    )
-                }
-                composable(NavRoute.Tracker.route) {
-                    TrackerScreen(navController)
-                }
-                composable(NavRoute.Insights.route) {
-                    InsightsScreen()
-                }
-                composable(NavRoute.Settings.route) {
-                    SettingsScreen(navController)
-                }
-
-                composable(
-                    route = NavRoute.DailyLog.route,
-                    arguments = listOf(
-                        navArgument("date") { type = NavType.StringType },
-                    ),
-                    enterTransition = {
-                        slideInVertically(
-                            animationSpec = tween(DETAIL_TRANSITION_DURATION_MS),
-                            initialOffsetY = { fullHeight -> fullHeight },
-                        )
-                    },
-                    exitTransition = { fadeOut(tween(DETAIL_TRANSITION_DURATION_MS)) },
-                    popEnterTransition = { fadeIn(tween(DETAIL_TRANSITION_DURATION_MS)) },
-                    popExitTransition = {
-                        slideOutVertically(
-                            animationSpec = tween(DETAIL_TRANSITION_DURATION_MS),
-                            targetOffsetY = { fullHeight -> fullHeight },
-                        )
-                    },
-                ) { backStackEntry ->
-                    val dateString = backStackEntry.arguments?.getString("date")
-                    if (dateString != null) {
+                    composable(NavRoute.DailyLogHome.route) {
+                        val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
                         DailyLogScreen(
-                            date = LocalDate.parse(dateString),
-                            onDone = { navController.popBackStack() },
+                            date = today,
+                            showCycleStatus = true,
+                            onNavigateToTracker = {
+                                navController.navigate(NavRoute.Tracker.route) {
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            onDone = {
+                                navController.navigate(NavRoute.Tracker.route) {
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
                         )
+                    }
+                    composable(NavRoute.Tracker.route) {
+                        TrackerScreen(navController)
+                    }
+                    composable(NavRoute.Insights.route) {
+                        InsightsScreen()
+                    }
+                    composable(NavRoute.Settings.route) {
+                        SettingsScreen(navController)
+                    }
+
+                    composable(
+                        route = NavRoute.DailyLog.route,
+                        arguments = listOf(
+                            navArgument("date") { type = NavType.StringType },
+                        ),
+                        enterTransition = {
+                            slideInVertically(
+                                animationSpec = tween(DETAIL_TRANSITION_DURATION_MS),
+                                initialOffsetY = { fullHeight -> fullHeight },
+                            )
+                        },
+                        exitTransition = { fadeOut(tween(DETAIL_TRANSITION_DURATION_MS)) },
+                        popEnterTransition = { fadeIn(tween(DETAIL_TRANSITION_DURATION_MS)) },
+                        popExitTransition = {
+                            slideOutVertically(
+                                animationSpec = tween(DETAIL_TRANSITION_DURATION_MS),
+                                targetOffsetY = { fullHeight -> fullHeight },
+                            )
+                        },
+                    ) { backStackEntry ->
+                        val dateString = backStackEntry.arguments?.getString("date")
+                        if (dateString != null) {
+                            DailyLogScreen(
+                                date = LocalDate.parse(dateString),
+                                onDone = { navController.popBackStack() },
+                            )
+                        }
                     }
                 }
             }

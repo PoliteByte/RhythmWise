@@ -35,6 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -73,6 +75,7 @@ fun EmptyStateOverlay(
     modifier: Modifier = Modifier,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     val scrimColor = MaterialTheme.colorScheme.surface
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val coroutineScope = rememberCoroutineScope()
@@ -111,6 +114,7 @@ fun EmptyStateOverlay(
                             coroutineScope.launch {
                                 val progress = abs(offsetX.value) / containerWidthPx
                                 if (progress >= DISMISS_FRACTION) {
+                                    sounds.play(SoundEffect.SWIPE)
                                     // Commit dismiss in the drag direction.
                                     val target = if (offsetX.value > 0) containerWidthPx else -containerWidthPx
                                     offsetX.animateTo(target, tween(durationMillis = 200))
@@ -134,6 +138,7 @@ fun EmptyStateOverlay(
                 }
                 .pointerInput(Unit) {
                     detectTapGestures {
+                        sounds.play(SoundEffect.TAP_LIGHT)
                         coroutineScope.launch {
                             val target = if (isRtl) -containerWidthPx else containerWidthPx
                             offsetX.animateTo(target, tween(durationMillis = 300))
@@ -149,6 +154,7 @@ fun EmptyStateOverlay(
                 // discoverable for beta testers (issue #147)
                 IconButton(
                     onClick = {
+                        sounds.play(SoundEffect.TAP_LIGHT)
                         coroutineScope.launch {
                             val target = if (isRtl) -containerWidthPx else containerWidthPx
                             offsetX.animateTo(target, tween(durationMillis = 300))

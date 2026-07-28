@@ -221,6 +221,52 @@ class AppSettingsTest {
         }
     }
 
+    // --- soundEffectsEnabled ---
+
+    @Test
+    fun setSoundEffectsEnabled_WHEN_setToFalse_THEN_emitsFalse() = runTest {
+        appSettings.setSoundEffectsEnabled(true)
+
+        appSettings.soundEffectsEnabled.test {
+            assertTrue(awaitItem())
+
+            appSettings.setSoundEffectsEnabled(false)
+
+            assertFalse(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun setSoundEffectsEnabled_WHEN_setToTrue_THEN_emitsTrue() = runTest {
+        appSettings.setSoundEffectsEnabled(false)
+
+        appSettings.soundEffectsEnabled.test {
+            assertFalse(awaitItem())
+
+            appSettings.setSoundEffectsEnabled(true)
+
+            assertTrue(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // --- soundEffectsVolume ---
+
+    @Test
+    fun setSoundEffectsVolume_WHEN_changed_THEN_emitsNewPercent() = runTest {
+        appSettings.setSoundEffectsVolume(SOUND_VOLUME_DEFAULT_PERCENT)
+
+        appSettings.soundEffectsVolume.test {
+            assertEquals(SOUND_VOLUME_DEFAULT_PERCENT, awaitItem())
+
+            appSettings.setSoundEffectsVolume(35)
+
+            assertEquals(35, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     // --- menstruationColor ---
 
     @Test

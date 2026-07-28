@@ -17,9 +17,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 
 /**
@@ -47,6 +50,7 @@ fun WaterTrackerCounter(
     enabled: Boolean = true,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     Column(
         modifier = modifier,
@@ -62,37 +66,31 @@ fun WaterTrackerCounter(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(dims.md)
         ) {
-            FilledIconButton(
-                onClick = onDecrement,
+            WaterCounterButton(
+                icon = Icons.Default.Remove,
+                contentDescription = stringResource(R.string.cd_water_remove),
+                onClick = {
+                    if (cups > 0) sounds.play(SoundEffect.TICK)
+                    onDecrement()
+                },
                 enabled = enabled && cups > 0,
-                modifier = Modifier
-                    .size(dims.buttonMin)
-                    .testTag("water-decrement"),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            ) {
-                Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.cd_water_remove))
-            }
+                testTag = "water-decrement",
+            )
             Text(
                 text = stringResource(R.string.water_cups_count, cups),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.testTag("water-count")
             )
-            FilledIconButton(
-                onClick = onIncrement,
+            WaterCounterButton(
+                icon = Icons.Default.Add,
+                contentDescription = stringResource(R.string.cd_water_add),
+                onClick = {
+                    sounds.play(SoundEffect.TICK)
+                    onIncrement()
+                },
                 enabled = enabled,
-                modifier = Modifier
-                    .size(dims.buttonMin)
-                    .testTag("water-increment"),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_water_add))
-            }
+                testTag = "water-increment",
+            )
         }
         if (yesterdayCupsForPrompt != null) {
             Spacer(Modifier.height(dims.sm))
@@ -102,5 +100,30 @@ fun WaterTrackerCounter(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+/** One side of the counter: a secondary-container icon button at the minimum touch size. */
+@Composable
+private fun WaterCounterButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    testTag: String,
+) {
+    val dims = LocalDimensions.current
+    FilledIconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier
+            .size(dims.buttonMin)
+            .testTag(testTag),
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    ) {
+        Icon(icon, contentDescription = contentDescription)
     }
 }

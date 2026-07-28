@@ -2301,8 +2301,10 @@ Every meaningful interaction plays a short, subtle sound. The system lives in
 - **`LocalSoundEffects`** — CompositionLocal provided once in `CycleWiseAppUI`.
   Composables read it with `val sounds = LocalSoundEffects.current`.
 - **`PagerSoundEffect(pagerState)`** — drop-in composable that plays `SWIPE` once
-  per settled page change. It also covers programmatic `animateScrollToPage`, so
-  tab clicks that drive a pager must NOT play their own tap sound.
+  per page crossing (keyed on `currentPage`, which flips mid-gesture — `settledPage`
+  fires only after the snap animation and sounds late). It also covers programmatic
+  `animateScrollToPage`, so tab clicks that drive a pager must NOT play their own
+  tap sound.
 
 ### Conventions
 
@@ -2320,10 +2322,11 @@ Every meaningful interaction plays a short, subtle sound. The system lives in
 The 12 WAV assets (`res/raw/snd_*.wav`) are synthesized by
 `tools/generate_ui_sounds.py` — one tonal family (D-pentatonic blips, pitchless
 noise whooshes). Never hand-edit the WAVs; re-tune the script and re-run it.
-The user setting (Settings → Notifications → Sound) stores 0–100 with a default
-of 80; playback gain applies a perceptual x² curve (`soundVolumeGain`), and the
-assets are authored to feel subtle at exactly that 80% default, leaving headroom
-above it.
+The feature is **off by default** and positioned in Settings → Notifications →
+Sound as an accessibility aid (audio feedback for users who can't easily see the
+screen). The volume setting stores 0–100 with a default of 80; playback gain
+applies a perceptual x² curve (`soundVolumeGain`), and the assets are authored to
+feel subtle at exactly that 80% default, leaving headroom above it.
 
 ---
 

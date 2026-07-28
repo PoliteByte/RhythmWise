@@ -49,8 +49,12 @@ def tone(freq_start, freq_end, duration, decay_tau, partial=0.0, attack=0.002):
     return out
 
 
-def whoosh(freq_start, freq_end, duration, q=1.8, seed=7):
-    """Band-passed noise with an exponential center-frequency sweep."""
+def whoosh(freq_start, freq_end, duration, q=1.8, seed=7, attack=0.35):
+    """Band-passed noise with an exponential center-frequency sweep.
+
+    `attack` is the raised-cosine ramp-up as a fraction of the duration; keep it
+    short for sounds that must feel instant (the page-change swipe).
+    """
     rng = random.Random(seed)
     n = int(SAMPLE_RATE * duration)
     low = band = 0.0
@@ -63,10 +67,9 @@ def whoosh(freq_start, freq_end, duration, q=1.8, seed=7):
         high = noise - low - band / q
         band += f * high
         low += f * band
-        # Smooth raised-cosine envelope: 35% attack, 65% release.
         pos = i / n
-        env = 0.5 - 0.5 * math.cos(math.pi * pos / 0.35) if pos < 0.35 \
-            else 0.5 + 0.5 * math.cos(math.pi * (pos - 0.35) / 0.65)
+        env = 0.5 - 0.5 * math.cos(math.pi * pos / attack) if pos < attack \
+            else 0.5 + 0.5 * math.cos(math.pi * (pos - attack) / (1.0 - attack))
         out.append(band * env)
     return out
 
@@ -128,7 +131,8 @@ def main():
     write_wav("snd_deselect.wav", tone(880, 880, 0.10, 0.020, partial=0.10), peak=0.38)
 
     # Spatial transitions: pitchless noise so they read as motion, not melody.
-    write_wav("snd_swipe.wav", whoosh(500, 1600, 0.17), peak=0.30)
+    # The swipe leads with a fast attack — it plays mid-gesture and must feel instant.
+    write_wav("snd_swipe.wav", whoosh(500, 1600, 0.14, attack=0.12), peak=0.30)
     write_wav("snd_open.wav", whoosh(350, 1200, 0.15, seed=11), peak=0.32)
     write_wav("snd_close.wav", whoosh(1200, 350, 0.15, seed=12), peak=0.32)
 

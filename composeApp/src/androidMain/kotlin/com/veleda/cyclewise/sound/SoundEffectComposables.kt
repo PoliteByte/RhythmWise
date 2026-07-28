@@ -17,18 +17,19 @@ val LocalSoundEffects: ProvidableCompositionLocal<SoundEffectPlayer> =
     staticCompositionLocalOf { NoOpSoundEffectPlayer }
 
 /**
- * Plays [effect] each time [pagerState] settles on a new page — covering both user
+ * Plays [effect] each time [pagerState] crosses onto a new page — covering both user
  * swipes and programmatic `animateScrollToPage` calls (tab clicks), which is why
  * tab click handlers driving a pager must NOT also play a tap sound.
  *
- * Keyed on [PagerState.settledPage] rather than `currentPage` so the sound lands
- * once per completed page change, not mid-fling. The initial composition is skipped.
+ * Keyed on [PagerState.currentPage], which flips mid-gesture as soon as the new page
+ * becomes the closest snap target — waiting for `settledPage` made the sound land
+ * noticeably after the swipe. The initial composition is skipped.
  */
 @Composable
 fun PagerSoundEffect(pagerState: PagerState, effect: SoundEffect = SoundEffect.SWIPE) {
     val sounds = LocalSoundEffects.current
     LaunchedEffect(pagerState, sounds) {
-        snapshotFlow { pagerState.settledPage }
+        snapshotFlow { pagerState.currentPage }
             .drop(1)
             .collect { sounds.play(effect) }
     }

@@ -101,7 +101,7 @@ class SettingsViewModelTest {
         every { mockAppSettings.reminderHydrationFrequencyHours } returns flowOf(3)
         every { mockAppSettings.reminderHydrationStartHour } returns flowOf(8)
         every { mockAppSettings.reminderHydrationEndHour } returns flowOf(20)
-        every { mockAppSettings.soundEffectsEnabled } returns flowOf(true)
+        every { mockAppSettings.soundEffectsEnabled } returns flowOf(false)
         every { mockAppSettings.soundEffectsVolume } returns flowOf(SOUND_VOLUME_DEFAULT_PERCENT)
 
         // Stub android.util.Log so Log.e() returns 0 instead of throwing
@@ -407,30 +407,30 @@ class SettingsViewModelTest {
     // ── Sound effects ────────────────────────────────────────────────
 
     @Test
-    fun `init WHEN created THEN soundDefaultsAreEnabledAtDefaultVolume`() = runTest {
+    fun `init WHEN created THEN soundDefaultsAreOffAtDefaultVolume`() = runTest {
         // GIVEN/WHEN — ViewModel created with default AppSettings flows
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        // THEN — sounds on at the authored default volume
+        // THEN — sounds off by default (accessibility opt-in) at the authored default volume
         val state = viewModel.notificationState.value
-        assertTrue(state.soundEffectsEnabled)
+        assertFalse(state.soundEffectsEnabled)
         assertEquals(SOUND_VOLUME_DEFAULT_PERCENT, state.soundEffectsVolume)
     }
 
     @Test
-    fun `onEvent SoundEffectsToggled WHEN disabled THEN updatesStateAndPersists`() = runTest {
-        // GIVEN — ViewModel with sound effects enabled
+    fun `onEvent SoundEffectsToggled WHEN enabled THEN updatesStateAndPersists`() = runTest {
+        // GIVEN — ViewModel with sound effects off (the default)
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        // WHEN — sound effects disabled
-        viewModel.onEvent(SettingsEvent.SoundEffectsToggled(false))
+        // WHEN — sound effects enabled
+        viewModel.onEvent(SettingsEvent.SoundEffectsToggled(true))
         advanceUntilIdle()
 
         // THEN — state updated and persisted
-        assertFalse(viewModel.notificationState.value.soundEffectsEnabled)
-        coVerify(atLeast = 1) { mockAppSettings.setSoundEffectsEnabled(false) }
+        assertTrue(viewModel.notificationState.value.soundEffectsEnabled)
+        coVerify(atLeast = 1) { mockAppSettings.setSoundEffectsEnabled(true) }
     }
 
     @Test

@@ -115,7 +115,7 @@ const val SOUND_VOLUME_DEFAULT_PERCENT = 80
  * @property heatmapFlowIntensityColor    Custom hex color for the Flow Intensity heatmap metric (6-char, no '#'; default: "7B1FA2").
  * @property heatmapMedicationCountColor  Custom hex color for the Medication Count heatmap metric (6-char, no '#'; default: "388E3C").
  * @property themeMode                     User-selected theme mode key ("system", "light", or "dark"; default: "system").
- * @property soundEffectsEnabled           Whether UI sound effects play on interactions (default: true).
+ * @property soundEffectsEnabled           Whether UI sound effects play on interactions (default: false).
  * @property soundEffectsVolume            UI sound effects volume percent, 0–100 (default: [SOUND_VOLUME_DEFAULT_PERCENT]).
  */
 class AppSettings(private val context: Context) {
@@ -422,9 +422,9 @@ class AppSettings(private val context: Context) {
 
     // ── Sound preferences ─────────────────────────────────────────────
 
-    /** Whether UI sound effects play on interactions. */
+    /** Whether UI sound effects play on interactions. Off by default; primarily an accessibility aid. */
     val soundEffectsEnabled: Flow<Boolean> = context.dataStore.data
-        .map { prefs -> prefs[SOUND_EFFECTS_ENABLED] ?: true }
+        .map { prefs -> prefs[SOUND_EFFECTS_ENABLED] ?: false }
 
     /** Persists the user's preference for UI sound effects. */
     suspend fun setSoundEffectsEnabled(enabled: Boolean) {

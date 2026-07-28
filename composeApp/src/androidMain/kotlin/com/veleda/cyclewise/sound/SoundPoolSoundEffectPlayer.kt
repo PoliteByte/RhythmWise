@@ -50,8 +50,10 @@ class SoundPoolSoundEffectPlayer(
     private val loadedSampleIds = ConcurrentHashMap.newKeySet<Int>()
     private val sampleIds: Map<SoundEffect, Int>
 
+    // Matches the AppSettings default (off) so no sound sneaks out in the frames
+    // before the first DataStore emission lands.
     @Volatile
-    private var enabled = true
+    private var enabled = false
 
     @Volatile
     private var volumePercent = SOUND_VOLUME_DEFAULT_PERCENT

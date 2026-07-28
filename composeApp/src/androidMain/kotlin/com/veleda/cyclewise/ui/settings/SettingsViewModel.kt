@@ -195,7 +195,7 @@ data class ColorsSettingsState(
  * @property hydrationEndHour          Active window end hour for hydration reminders.
  * @property showPermissionRationale   Whether the notification permission rationale is shown.
  * @property showPrivacyDialog         Whether the period privacy dialog is visible.
- * @property soundEffectsEnabled       Whether UI sound effects play on interactions.
+ * @property soundEffectsEnabled       Whether UI sound effects play on interactions (off by default).
  * @property soundEffectsVolume        UI sound effects volume percent (0-100).
  */
 data class NotificationSettingsState(
@@ -212,7 +212,7 @@ data class NotificationSettingsState(
     val hydrationEndHour: Int = 20,
     val showPermissionRationale: Boolean = false,
     val showPrivacyDialog: Boolean = false,
-    val soundEffectsEnabled: Boolean = true,
+    val soundEffectsEnabled: Boolean = false,
     val soundEffectsVolume: Int = SOUND_VOLUME_DEFAULT_PERCENT,
 )
 

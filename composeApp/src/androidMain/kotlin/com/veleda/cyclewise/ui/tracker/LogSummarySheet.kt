@@ -16,12 +16,14 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Grain
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -34,9 +36,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.models.CyclePhase
 import com.veleda.cyclewise.domain.models.FullDailyLog
@@ -45,6 +51,10 @@ import com.veleda.cyclewise.domain.models.Medication
 import com.veleda.cyclewise.domain.models.PeriodColor
 import com.veleda.cyclewise.domain.models.PeriodConsistency
 import com.veleda.cyclewise.domain.models.Symptom
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
+import com.veleda.cyclewise.ui.components.flowIntensityLabel
+import com.veleda.cyclewise.ui.components.moodFaceIcon
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import com.veleda.cyclewise.ui.utils.toLocalizedDateString
 import kotlinx.datetime.LocalDate
@@ -89,6 +99,7 @@ internal fun LogSummarySheetContent(
     onViewFullLogClick: (LocalDate) -> Unit
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     Column(
         modifier = Modifier
@@ -107,14 +118,14 @@ internal fun LogSummarySheetContent(
             )
             Row {
                 IconButton(
-                    onClick = { onEditClick(log.entry.entryDate) },
+                    onClick = { sounds.play(SoundEffect.TAP); onEditClick(log.entry.entryDate) },
                     modifier = Modifier.testTag("edit-log-button")
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.tracker_edit_log))
                 }
                 if (periodId != null) {
                     IconButton(
-                        onClick = { onDeleteClick(periodId) },
+                        onClick = { sounds.play(SoundEffect.TAP); onDeleteClick(periodId) },
                         modifier = Modifier.testTag("delete-period-button")
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.tracker_delete_period))
@@ -142,7 +153,7 @@ internal fun LogSummarySheetContent(
             InfoCard(
                 icon = Icons.Default.Opacity,
                 title = stringResource(R.string.tracker_flow_label),
-                value = it.name.lowercase().replaceFirstChar { c -> c.uppercase() }
+                value = flowIntensityLabel(it)
             )
         }
 
@@ -177,32 +188,43 @@ internal fun LogSummarySheetContent(
         }
 
         if (showMood) {
-            log.entry.moodScore?.let {
+            log.entry.moodScore?.let { score ->
                 InfoCard(
                     icon = Icons.Default.Mood,
                     title = stringResource(R.string.tracker_mood_label),
-                    value = "$it / 5"
-                )
+                ) {
+                    MoodFaceValue(score = score)
+                }
             }
         }
 
         if (showEnergy) {
-            log.entry.energyLevel?.let {
+            log.entry.energyLevel?.let { score ->
                 InfoCard(
                     icon = Icons.Default.Bolt,
                     title = stringResource(R.string.tracker_energy_label),
-                    value = "$it / 5"
-                )
+                ) {
+                    IconScale(
+                        score = score,
+                        filledIcon = Icons.Default.Bolt,
+                        emptyIcon = Icons.Outlined.Bolt,
+                    )
+                }
             }
         }
 
         if (showLibido) {
-            log.entry.libidoScore?.let {
+            log.entry.libidoScore?.let { score ->
                 InfoCard(
                     icon = Icons.Default.FavoriteBorder,
                     title = stringResource(R.string.tracker_libido_label),
-                    value = "$it / 5"
-                )
+                ) {
+                    IconScale(
+                        score = score,
+                        filledIcon = Icons.Default.Favorite,
+                        emptyIcon = Icons.Default.FavoriteBorder,
+                    )
+                }
             }
         }
 
@@ -252,7 +274,7 @@ internal fun LogSummarySheetContent(
         )
 
         FilledTonalButton(
-            onClick = { onViewFullLogClick(log.entry.entryDate) },
+            onClick = { sounds.play(SoundEffect.TAP); onViewFullLogClick(log.entry.entryDate) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(stringResource(R.string.tracker_view_full_log))
@@ -324,6 +346,18 @@ private fun <T> ChipRowSection(
  */
 @Composable
 private fun InfoCard(icon: ImageVector, title: String, value: String) {
+    InfoCard(icon = icon, title = title) {
+        Text(text = value, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/**
+ * [InfoCard] variant whose value slot is arbitrary composable [content] —
+ * used for the visual score scales that replaced the bare "n / 5" text
+ * (issue #146).
+ */
+@Composable
+private fun InfoCard(icon: ImageVector, title: String, content: @Composable () -> Unit) {
     val dims = LocalDimensions.current
 
     Card(
@@ -342,7 +376,70 @@ private fun InfoCard(icon: ImageVector, title: String, value: String) {
             Icon(icon, contentDescription = title, tint = MaterialTheme.colorScheme.primary)
             Text(text = "$title:", style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.weight(1f))
-            Text(text = value, style = MaterialTheme.typography.bodyLarge)
+            content()
         }
     }
 }
+
+/**
+ * Mood value rendered as an expressive sentiment face plus the numeric score —
+ * beta testers preferred a glanceable face over bare "n / 5" (issue #146).
+ */
+@Composable
+private fun MoodFaceValue(score: Int) {
+    val dims = LocalDimensions.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(dims.xs),
+    ) {
+        Icon(
+            imageVector = moodFaceIcon(score),
+            contentDescription = stringResource(R.string.score_of_five, score),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(dims.lg),
+        )
+        Text(text = "$score / 5", style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/**
+ * Five-step icon scale matching the wellness input selectors' single-highlight
+ * model (Daniel's review: no fill-up anywhere): only the position equal to
+ * [score] renders [filledIcon] in the primary color at full opacity; the rest
+ * render [emptyIcon] faded. The row carries a "N of 5" content description so
+ * screen readers announce the value once.
+ */
+@Composable
+private fun IconScale(
+    score: Int,
+    filledIcon: ImageVector,
+    emptyIcon: ImageVector,
+) {
+    val dims = LocalDimensions.current
+    val description = stringResource(R.string.score_of_five, score)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            contentDescription = description
+        },
+    ) {
+        repeat(5) { index ->
+            val isSelected = index + 1 == score
+            Icon(
+                imageVector = if (isSelected) filledIcon else emptyIcon,
+                contentDescription = null,
+                tint = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier
+                    .size(dims.lg)
+                    .alpha(if (isSelected) 1f else UNSELECTED_SCALE_ALPHA),
+            )
+        }
+    }
+}
+
+/** Alpha for non-selected positions in [IconScale] — mirrors the input selectors. */
+private const val UNSELECTED_SCALE_ALPHA = 0.35f

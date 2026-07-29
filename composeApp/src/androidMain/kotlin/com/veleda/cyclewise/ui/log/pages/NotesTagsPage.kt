@@ -38,11 +38,16 @@ import com.veleda.cyclewise.ui.components.HelpDialog
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.models.CustomTag
 import com.veleda.cyclewise.domain.models.CustomTagLog
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.log.MAX_NAME_LENGTH
 import com.veleda.cyclewise.ui.log.MAX_NOTE_LENGTH
 import com.veleda.cyclewise.ui.log.components.SectionCard
@@ -96,6 +101,7 @@ internal fun NotesTagsPage(
     onEditDismissed: () -> Unit = {},
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     var showHelp by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
@@ -143,7 +149,7 @@ internal fun NotesTagsPage(
         }
 
         FilledTonalButton(
-            onClick = onDone,
+            onClick = { sounds.play(SoundEffect.TAP); onDone() },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.daily_log_done_button))
@@ -223,6 +229,7 @@ internal fun CustomTagLogger(
     onDeleteClicked: (CustomTag) -> Unit = {},
     onEditDismissed: () -> Unit = {},
 ) {
+    val sounds = LocalSoundEffects.current
     var newTagName by rememberSaveable { mutableStateOf("") }
 
     Column(verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.md)) {
@@ -239,7 +246,10 @@ internal fun CustomTagLogger(
                             label = tag.name,
                             selected = isSelected,
                             testTag = "chip-${tag.name.uppercase()}",
-                            onClick = { onToggleCustomTag(tag) },
+                            onClick = {
+                                sounds.play(if (isSelected) SoundEffect.TOGGLE_OFF else SoundEffect.TOGGLE_ON)
+                                onToggleCustomTag(tag)
+                            },
                             onLongClick = { onCustomTagLongPressed(tag) },
                             onRenameAction = { onRenameClicked(tag) },
                             onDeleteAction = { onDeleteClicked(tag) },
@@ -295,6 +305,7 @@ internal fun CustomTagLogger(
             trailingIcon = {
                 IconButton(
                     onClick = {
+                        sounds.play(SoundEffect.TAP)
                         onCreateAndAddCustomTag(newTagName)
                         newTagName = ""
                     },
@@ -312,7 +323,13 @@ internal fun CustomTagLogger(
  * Multi-line text field for daily log notes with a character counter.
  *
  * Enforces a maximum length of [MAX_NOTE_LENGTH] characters and displays
- * a live character count in the supporting text.
+ * a live character count in the supporting text. Sentences are auto-capitalized
+ * by the IME, and bullet lists continue automatically on return — see
+ * [continueBulletList] (issue #152).
+ *
+ * The field owns a [TextFieldValue] so the bullet transform can position the
+ * cursor; the external [note] remains the source of truth and resets the field
+ * whenever it diverges (e.g., the log loads after composition).
  *
  * @param note Current note text.
  * @param onNoteChanged Callback invoked on each text change.
@@ -322,14 +339,27 @@ internal fun NoteEditor(
     note: String,
     onNoteChanged: (String) -> Unit
 ) {
+    var fieldValue by remember { mutableStateOf(TextFieldValue(note)) }
+    if (fieldValue.text != note) {
+        // External change (initial load, restore) — adopt it, cursor at end
+        fieldValue = TextFieldValue(note, TextRange(note.length))
+    }
+
     OutlinedTextField(
-        value = note,
-        onValueChange = { if (it.length <= MAX_NOTE_LENGTH) onNoteChanged(it) },
+        value = fieldValue,
+        onValueChange = { proposed ->
+            val transformed = continueBulletList(fieldValue, proposed)
+            if (transformed.text.length <= MAX_NOTE_LENGTH) {
+                fieldValue = transformed
+                if (transformed.text != note) onNoteChanged(transformed.text)
+            }
+        },
         label = { Text(stringResource(R.string.daily_log_add_notes)) },
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = LocalDimensions.current.xl * 4),
         placeholder = { Text(stringResource(R.string.daily_log_notes_placeholder)) },
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         supportingText = {
             Text(
                 text = stringResource(R.string.daily_log_notes_char_count, note.length, MAX_NOTE_LENGTH),

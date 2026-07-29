@@ -31,6 +31,14 @@ data class InsightData(
     val topSymptomsCount: Int,
     val waterIntakes: List<WaterIntake> = emptyList(),
     val medicationLibrary: List<Medication> = emptyList(),
+    /**
+     * The user's self-reported typical cycle length (issue #143), or null.
+     * Only prediction-style generators may use it as a fallback via
+     * `CycleLengthResolver`; insights that DESCRIBE the user's data (e.g. the
+     * cycle-length average card) must keep gating on [averageCycleLength] so
+     * they never present a fabricated number as an observation.
+     */
+    val typicalCycleLengthDays: Int? = null,
 )
 
 /**

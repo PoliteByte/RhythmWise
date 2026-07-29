@@ -3,6 +3,7 @@ package com.veleda.cyclewise.ui.settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.FilledTonalButton
@@ -88,7 +89,10 @@ fun HeatmapColorSettings(
         }
 
         Spacer(Modifier.height(dims.sm))
-        FilledTonalButton(onClick = onResetDefaults) {
+        FilledTonalButton(
+            onClick = onResetDefaults,
+            modifier = Modifier.padding(horizontal = dims.md)
+        ) {
             Text(stringResource(R.string.heatmap_color_reset_defaults))
         }
     }

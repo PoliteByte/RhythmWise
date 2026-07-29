@@ -84,6 +84,17 @@ sealed interface SettingsEvent {
     /** User adjusted the "top symptoms" slider (1-5). */
     data class TopSymptomsCountChanged(val count: Int) : SettingsEvent
 
+    // ── Appearance (page 1) — Cycle (issue #143, encrypted DB) ─────
+
+    /** The Cycle card became visible and needs a fresh snapshot from the session. */
+    data object CycleSettingsRequested : SettingsEvent
+
+    /** User set (or cleared with null) their typical cycle length. */
+    data class TypicalCycleLengthChanged(val days: Int?) : SettingsEvent
+
+    /** User adjusted the auto-fill default period length (issue #144). */
+    data class DefaultPeriodLengthChanged(val days: Int) : SettingsEvent
+
     // ── Appearance (page 1) — Display toggles ──────────────────────
 
     /** User toggled "Show Mood in summary". */
@@ -184,6 +195,14 @@ sealed interface SettingsEvent {
 
     /** User changed the hydration active window end hour. */
     data class HydrationEndHourChanged(val hour: Int) : SettingsEvent
+
+    // ── Notifications (page 3) — Sound effects ─────────────────────
+
+    /** User toggled the UI sound effects switch. */
+    data class SoundEffectsToggled(val enabled: Boolean) : SettingsEvent
+
+    /** User changed the UI sound effects volume slider (0–100 percent). */
+    data class SoundVolumeChanged(val percent: Int) : SettingsEvent
 
     // ── About (page 4) — Dialogs ───────────────────────────────────
 

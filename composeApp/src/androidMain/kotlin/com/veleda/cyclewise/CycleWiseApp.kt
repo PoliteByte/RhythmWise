@@ -93,7 +93,7 @@ class CycleWiseApp :
                 val minutes = autolockMinutesCache
                 val last = prefs.getLong(KEY_LAST_BG_AT_ELAPSED, -1L)
 
-                if (shouldLockNow(minutes, last)) {
+                if (shouldLockNow(minutes, last, SystemClock.elapsedRealtime())) {
                     // Close session scope to lock DB + clear session-scoped VMs
                     sessionManager.closeSession()
 
@@ -108,21 +108,30 @@ class CycleWiseApp :
         }
     }
 
-    /**
-     * Hardening rules:
-     * - minutes == 0  -> always lock on foreground
-     * - no last value -> don't lock (unless minutes == 0)
-     * - elapsed >= minutes -> lock
-     */
-    private fun shouldLockNow(minutes: Int, lastBgAtElapsed: Long): Boolean {
-        if (minutes == 0) return true
-        if (lastBgAtElapsed <= 0L) return false
-        val elapsedMs = SystemClock.elapsedRealtime() - lastBgAtElapsed
-        val thresholdMs = minutes * 60_000L
-        return elapsedMs >= thresholdMs
-    }
-
     companion object {
         private const val KEY_LAST_BG_AT_ELAPSED = "last_bg_at_elapsed"
     }
+}
+
+/**
+ * Pure autolock decision applied when the app returns to the foreground.
+ *
+ * Rules:
+ * - `minutes < 0` ([AUTOLOCK_NEVER_MINUTES]) -> never lock automatically; the
+ *   user opted out of the timeout (issue #149)
+ * - `minutes == 0` ([AUTOLOCK_IMMEDIATE_MINUTES]) -> always lock on foreground
+ * - no last-background timestamp -> don't lock
+ * - elapsed time since backgrounding >= the timeout -> lock
+ *
+ * @param minutes configured timeout from [AppSettings.autolockMinutes]
+ * @param lastBgAtElapsed [SystemClock.elapsedRealtime] recorded at ON_STOP, or -1 when absent
+ * @param nowElapsed the current [SystemClock.elapsedRealtime], injected for testability
+ */
+internal fun shouldLockNow(minutes: Int, lastBgAtElapsed: Long, nowElapsed: Long): Boolean {
+    if (minutes < 0) return false
+    if (minutes == 0) return true
+    if (lastBgAtElapsed <= 0L) return false
+    val elapsedMs = nowElapsed - lastBgAtElapsed
+    val thresholdMs = minutes * 60_000L
+    return elapsedMs >= thresholdMs
 }

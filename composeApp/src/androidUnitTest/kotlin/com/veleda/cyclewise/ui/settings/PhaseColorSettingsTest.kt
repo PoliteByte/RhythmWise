@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.veleda.cyclewise.ui.theme.Dimensions
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import com.veleda.cyclewise.ui.tracker.CyclePhaseColors
@@ -75,5 +76,17 @@ class PhaseColorSettingsTest {
             .onAllNodesWithContentDescription("Select color F48FB1")
             .onFirst()
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun phaseColorRow_WHEN_tapped_THEN_opensColorPickerDialog() {
+        // GIVEN — phase color settings rendered (issue #150)
+        setPhaseColorContent()
+
+        // WHEN — tapping the Period row
+        composeTestRule.onNodeWithText("Period").performClick()
+
+        // THEN — the picker dialog opens for that phase
+        composeTestRule.onNodeWithText("Pick a color for Period").assertIsDisplayed()
     }
 }

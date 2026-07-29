@@ -28,6 +28,10 @@
 - On logout or app background timeout:
     - All repositories and DAOs in the scope are closed.
     - The session scope is destroyed.
+- The background timeout is user-configurable (Immediately / 5–30 min / Never).
+  "Never" disables only the foreground-return timer after an explicit in-app
+  warning — Lock Now, process death, and the cold-start passphrase requirement
+  are unaffected, so data at rest is always encrypted regardless of the setting.
 
 ---
 
@@ -47,8 +51,12 @@
 ---
 
 ## Screen Protection
-- `FLAG_SECURE` is set on the activity window at launch.
+- `FLAG_SECURE` is set on the activity window at launch for all non-debuggable
+  (release) builds — every build a user can install.
 - Blocks screenshots, screen recording, and recent-apps thumbnails.
+- Debuggable builds skip the flag so emulator-driven UI verification and Play
+  Store screenshot sessions can capture the screen. Debuggable builds are never
+  distributed; Google Play rejects them at upload.
 
 ---
 

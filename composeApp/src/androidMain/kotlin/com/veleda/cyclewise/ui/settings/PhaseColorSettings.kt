@@ -14,12 +14,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,7 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import com.veleda.cyclewise.ui.tracker.CyclePhaseColors
@@ -51,9 +57,10 @@ internal val PRESET_COLORS = listOf(
  * Composable that renders four color-editing rows (one per cycle phase),
  * each with a preset color grid, plus a "Reset to Defaults" button.
  *
- * Each row shows a colored preview swatch, the phase label, an [OutlinedTextField]
- * for entering a 6-character hex color code (no `#` prefix), and a horizontally
- * scrollable row of preset color swatches. Invalid input displays an inline error.
+ * Each row shows a colored preview swatch, the phase label, and the current hex
+ * value; tapping it opens a [ColorPickerDialog] with hue/saturation/brightness
+ * sliders (hex entry lives inside the dialog — issue #150). Below each row sits
+ * a horizontally scrollable preset color grid for one-tap picks.
  *
  * Accepts state values and change callbacks instead of [AppSettings] directly,
  * wiring through the [SettingsViewModel].
@@ -157,14 +164,17 @@ fun PhaseColorSettings(
 internal val HEX_FILTER = Regex("[^0-9A-Fa-f]")
 
 /**
- * A single row for editing one phase's hex color.
+ * A single row for editing one phase's color.
  *
- * Shows a 24 dp colored preview swatch, the phase label, and a hex text field.
+ * Shows a 24 dp colored preview swatch, the phase label, and the current hex
+ * value. Tapping the row opens a [ColorPickerDialog] with hue/saturation/
+ * brightness sliders — the raw hex field lives inside the dialog as the
+ * advanced affordance (issue #150).
  *
  * @param label        Phase display name.
  * @param hexValue     Current persisted 6-char hex string.
  * @param defaultColor Fallback [Color] used when [hexValue] is invalid.
- * @param onValueChange Callback invoked with the sanitised hex string when the user edits the field.
+ * @param onValueChange Callback invoked with the chosen hex when the picker is applied.
  */
 @Composable
 internal fun PhaseColorRow(
@@ -175,12 +185,17 @@ internal fun PhaseColorRow(
 ) {
     val dims = LocalDimensions.current
     val parsedColor = parseHexColor(hexValue)
-    val isError = hexValue.isNotEmpty() && parsedColor == null
+    var showPicker by remember { mutableStateOf(false) }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(dims.sm),
-        modifier = Modifier.padding(horizontal = dims.md)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                onClickLabel = stringResource(R.string.color_row_edit_cd, label),
+            ) { showPicker = true }
+            .padding(horizontal = dims.md, vertical = dims.xs)
     ) {
         Box(
             modifier = Modifier
@@ -191,21 +206,31 @@ internal fun PhaseColorRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.width(80.dp)
-        )
-        OutlinedTextField(
-            value = hexValue,
-            onValueChange = { raw ->
-                val filtered = raw.replace(HEX_FILTER, "").take(6).uppercase()
-                onValueChange(filtered)
-            },
-            placeholder = { Text(stringResource(R.string.phase_color_hex_hint)) },
-            isError = isError,
-            supportingText = if (isError) {
-                { Text(stringResource(R.string.phase_color_invalid_hex)) }
-            } else null,
-            singleLine = true,
             modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = hexValue,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(dims.md),
+        )
+    }
+
+    if (showPicker) {
+        ColorPickerDialog(
+            label = label,
+            initialHex = hexValue,
+            fallbackColor = defaultColor,
+            onConfirm = { hex ->
+                showPicker = false
+                onValueChange(hex)
+            },
+            onDismiss = { showPicker = false },
         )
     }
 }

@@ -2,8 +2,10 @@ package com.veleda.cyclewise.domain
 
 import com.veleda.cyclewise.domain.models.CyclePhase
 import com.veleda.cyclewise.domain.models.Period
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.daysUntil
+import kotlinx.datetime.plus
 
 /**
  * Stateless calculator that determines the [CyclePhase] for any given date
@@ -23,26 +25,35 @@ object CyclePhaseCalculator {
     private const val OVULATION_WINDOW_LENGTH = 3
 
     /**
-     * Determines the cycle phase for [date] given the user's [periods] and [averageCycleLength].
+     * Determines the cycle phase for [date] given the user's [periods] and the
+     * resolved [cycleLengthDays].
      *
      * Algorithm:
      * 1. Sort periods chronologically by start date.
      * 2. Find the **owning period** — the period whose start date is on or before [date]
      *    and whose next period's start date is after [date] (or it is the most recent period).
      * 3. If [date] falls within the owning period's start..end range, return [CyclePhase.MENSTRUATION].
+     *    An **ongoing** period (no end date, no next period) is assumed to last
+     *    [assumedPeriodLengthDays] — it no longer paints every subsequent day as
+     *    menstruation forever (issue #145).
      * 4. Determine expected cycle length: actual (start-to-start) for past cycles,
-     *    or [averageCycleLength] for the current/latest cycle.
-     * 5. Compute phase boundaries forward from the owning period's start date.
+     *    or [cycleLengthDays] for the current/latest cycle.
+     * 5. Compute phase boundaries forward from the owning period's start date —
+     *    days past the assumed period end fall into follicular/ovulation/luteal.
      *
-     * @param date               the date to classify.
-     * @param periods            all recorded periods (any sort order accepted).
-     * @param averageCycleLength average cycle length in days, or null if insufficient data.
+     * @param date                    the date to classify.
+     * @param periods                 all recorded periods (any sort order accepted).
+     * @param cycleLengthDays         resolved cycle length (see `CycleLengthResolver`) — never null,
+     *                                which removes the pre-#143 two-cycle dead zone.
+     * @param assumedPeriodLengthDays how long an ongoing period is assumed to run
+     *                                (see `PeriodLengthResolver`).
      * @return the computed [CyclePhase], or null if the date cannot be classified.
      */
     fun calculatePhase(
         date: LocalDate,
         periods: List<Period>,
-        averageCycleLength: Double?
+        cycleLengthDays: Double,
+        assumedPeriodLengthDays: Int,
     ): CyclePhase? {
         if (periods.isEmpty()) return null
 
@@ -62,15 +73,12 @@ object CyclePhaseCalculator {
         // belongs to that cycle instead — recurse is unnecessary since we used indexOfLast
         if (nextPeriod != null && date >= nextPeriod.startDate) return null
 
-        // Check if date is within the menstruation range
+        // Check if date is within the menstruation range. Ongoing periods are
+        // assumed to last assumedPeriodLengthDays (issue #145) — days beyond
+        // that fall through to the normal boundary computation below.
         val periodEnd = owningPeriod.endDate
-        if (periodEnd != null && date in owningPeriod.startDate..periodEnd) {
-            return CyclePhase.MENSTRUATION
-        }
-        // Ongoing period with no end date: all days from start onward are menstruation
-        if (periodEnd == null && date >= owningPeriod.startDate && nextPeriod == null) {
-            // For ongoing periods, if we have no end date, days from start are menstruation
-            // unless we have an average and can predict the end
+            ?: owningPeriod.startDate.plus(assumedPeriodLengthDays - 1, DateTimeUnit.DAY)
+        if (date in owningPeriod.startDate..periodEnd) {
             return CyclePhase.MENSTRUATION
         }
 
@@ -79,8 +87,8 @@ object CyclePhaseCalculator {
             // Past cycle: actual start-to-start distance
             owningPeriod.startDate.daysUntil(nextPeriod.startDate)
         } else {
-            // Current/latest cycle: use average
-            averageCycleLength?.toInt() ?: return null
+            // Current/latest cycle: resolved length (derived → user typical → default)
+            cycleLengthDays.toInt()
         }
 
         // Guard: cycle too short for meaningful phase computation
@@ -88,14 +96,8 @@ object CyclePhaseCalculator {
 
         val dayInCycle = owningPeriod.startDate.daysUntil(date) + 1 // 1-based
 
-        // Menstruation end day (1-based) — use actual period end if available
-        val menstruationEndDay = if (periodEnd != null) {
-            owningPeriod.startDate.daysUntil(periodEnd) + 1
-        } else {
-            // Shouldn't reach here for ongoing with no next period (handled above),
-            // but for safety:
-            1
-        }
+        // Menstruation end day (1-based) — actual or assumed period end
+        val menstruationEndDay = owningPeriod.startDate.daysUntil(periodEnd) + 1
 
         // Luteal starts at cycleLength - LUTEAL_PHASE_LENGTH + 1 (1-based)
         val lutealStartDay = cycleLength - LUTEAL_PHASE_LENGTH + 1

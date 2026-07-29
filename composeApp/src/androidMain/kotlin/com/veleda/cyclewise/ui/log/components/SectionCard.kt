@@ -42,6 +42,7 @@ internal fun SectionCard(
     onHelpClick: (() -> Unit)? = null,
     onInfoClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    valueLabel: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val dims = LocalDimensions.current
@@ -73,6 +74,14 @@ internal fun SectionCard(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
                     )
+                    // Compact current-value readout, e.g. "3/5" for wellness scores
+                    if (valueLabel != null) {
+                        Text(
+                            text = valueLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 if (onHelpClick != null) {
                     HelpButton(

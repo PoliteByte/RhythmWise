@@ -47,7 +47,7 @@ class HeatmapSelectorTest {
     @Test
     fun `WHEN rendered THEN showsOffChip`() {
         setContent()
-        composeTestRule.onNodeWithText("Off").assertIsDisplayed()
+        composeTestRule.onNodeWithText("No heatmap").assertIsDisplayed()
     }
 
     @Test
@@ -69,7 +69,7 @@ class HeatmapSelectorTest {
             selectedMetric = HeatmapMetric.Mood,
             onMetricSelected = { selected = it },
         )
-        composeTestRule.onNodeWithText("Off").performClick()
+        composeTestRule.onNodeWithText("No heatmap").performClick()
         assertNull(selected)
     }
 

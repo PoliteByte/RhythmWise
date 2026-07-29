@@ -164,6 +164,24 @@ class UnlockScreenTest {
         composeTestRule.onNodeWithTag("unlock-button").assertIsEnabled()
     }
 
+    @Test
+    fun loadingOverlay_WHEN_isUnlockingTrue_THEN_unlockingLabelDisplayed() {
+        // Given / When
+        setContent(uiState = PassphraseUiState(isUnlocking = true))
+
+        // Then — the key-derivation wait is labelled so it reads as work, not a freeze
+        composeTestRule.onNodeWithText("Unlocking your data…").assertIsDisplayed()
+    }
+
+    @Test
+    fun loadingOverlay_WHEN_isUnlockingFalse_THEN_unlockingLabelAbsent() {
+        // Given / When
+        setContent(uiState = PassphraseUiState(isUnlocking = false))
+
+        // Then
+        composeTestRule.onNodeWithText("Unlocking your data…").assertDoesNotExist()
+    }
+
     // endregion
 
     // region Password visibility toggle

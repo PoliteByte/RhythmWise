@@ -120,6 +120,7 @@ class InsightsViewModel(
             val topSymptomsCount = appSettings.topSymptomsCount.first()
             val waterIntakes = periodRepository.getAllWaterIntakes().first()
             val medicationLibrary = periodRepository.getMedicationLibrary().first()
+            val cycleSettings = periodRepository.observeCycleSettings().first()
 
             val scoredInsights = insightEngine.generateInsights(
                 allPeriods = allCycles,
@@ -128,6 +129,7 @@ class InsightsViewModel(
                 topSymptomsCount = topSymptomsCount,
                 waterIntakes = waterIntakes,
                 medicationLibrary = medicationLibrary,
+                typicalCycleLengthDays = cycleSettings.typicalCycleLengthDays,
             )
 
             val formatted = scoredInsights.map { scored ->

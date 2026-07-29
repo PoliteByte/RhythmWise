@@ -40,6 +40,8 @@ import androidx.compose.ui.text.input.ImeAction
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.models.Medication
 import com.veleda.cyclewise.domain.models.MedicationLog
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.components.HelpDialog
 import com.veleda.cyclewise.ui.log.MAX_NAME_LENGTH
 import com.veleda.cyclewise.ui.log.components.SectionCard
@@ -91,6 +93,7 @@ internal fun MedicationsPage(
     onEditDismissed: () -> Unit = {},
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     var showHelp by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
@@ -129,7 +132,7 @@ internal fun MedicationsPage(
         }
 
         FilledTonalButton(
-            onClick = onDone,
+            onClick = { sounds.play(SoundEffect.TAP); onDone() },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.daily_log_done_button))
@@ -208,6 +211,7 @@ internal fun MedicationLogger(
     onDeleteClicked: (Medication) -> Unit = {},
     onEditDismissed: () -> Unit = {},
 ) {
+    val sounds = LocalSoundEffects.current
     var newMedicationName by rememberSaveable { mutableStateOf("") }
 
     Column(verticalArrangement = Arrangement.spacedBy(LocalDimensions.current.md)) {
@@ -224,7 +228,10 @@ internal fun MedicationLogger(
                             label = medication.name,
                             selected = isSelected,
                             testTag = "chip-${medication.name.uppercase()}",
-                            onClick = { onToggleMedication(medication) },
+                            onClick = {
+                                sounds.play(if (isSelected) SoundEffect.TOGGLE_OFF else SoundEffect.TOGGLE_ON)
+                                onToggleMedication(medication)
+                            },
                             onLongClick = { onMedicationLongPressed(medication) },
                             onRenameAction = { onRenameClicked(medication) },
                             onDeleteAction = { onDeleteClicked(medication) },
@@ -280,6 +287,7 @@ internal fun MedicationLogger(
             trailingIcon = {
                 IconButton(
                     onClick = {
+                        sounds.play(SoundEffect.TAP)
                         onCreateAndAddMedication(newMedicationName)
                         newMedicationName = ""
                     },

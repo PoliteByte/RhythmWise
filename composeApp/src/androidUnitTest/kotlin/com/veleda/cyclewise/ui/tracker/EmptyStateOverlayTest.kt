@@ -81,6 +81,31 @@ class EmptyStateOverlayTest {
     }
 
     @Test
+    fun `GIVEN overlay composed THEN close button is displayed`() {
+        // GIVEN the overlay is composed
+        setContent()
+
+        // THEN the explicit close affordance is visible
+        composeTestRule.onNodeWithTag("emptyStateClose").assertIsDisplayed()
+    }
+
+    @Test
+    fun `GIVEN overlay composed WHEN close button clicked THEN onDismissed is called`() {
+        // GIVEN the overlay is composed with a dismiss tracker
+        var dismissed = false
+        setContent(onDismissed = { dismissed = true })
+
+        // WHEN the X button is clicked
+        composeTestRule.onNodeWithTag("emptyStateClose").performClick()
+
+        // Wait for the dismiss animation to complete
+        composeTestRule.waitForIdle()
+
+        // THEN the dismiss callback fires
+        assert(dismissed) { "Expected onDismissed to be called after close click" }
+    }
+
+    @Test
     fun `GIVEN overlay composed WHEN tapped THEN onDismissed is called`() {
         // GIVEN the overlay is composed with a dismiss tracker
         var dismissed = false

@@ -11,7 +11,12 @@ import com.veleda.cyclewise.androidData.local.dao.MedicationLogDao
 import com.veleda.cyclewise.androidData.local.dao.PeriodLogDao
 import com.veleda.cyclewise.androidData.local.dao.SymptomDao
 import com.veleda.cyclewise.androidData.local.dao.SymptomLogDao
+import com.veleda.cyclewise.domain.PeriodLengthResolver
+import com.veleda.cyclewise.domain.PeriodStartResult
+import com.veleda.cyclewise.androidData.local.dao.UserCycleSettingsDao
 import com.veleda.cyclewise.androidData.local.dao.WaterIntakeDao
+import com.veleda.cyclewise.androidData.local.entities.UserCycleSettingsEntity
+import com.veleda.cyclewise.domain.models.CycleSettings
 import com.veleda.cyclewise.androidData.local.database.PeriodDatabase
 import com.veleda.cyclewise.androidData.local.entities.toDomain
 import com.veleda.cyclewise.androidData.local.entities.toEntity
@@ -39,6 +44,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.*
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import com.veleda.cyclewise.domain.CycleLengthResolver
 import com.veleda.cyclewise.domain.CyclePhaseCalculator
 import com.veleda.cyclewise.domain.models.CyclePhase
 import com.veleda.cyclewise.domain.models.DayDetails
@@ -69,6 +75,8 @@ import com.veleda.cyclewise.androidData.local.entities.PeriodEntity
  * - [observeDayDetails] combines period ranges and log data into the calendar's source of truth.
  * - [seedDatabaseForDebug] is destructive and generates 6 months of test data.
  */
+// One constructor parameter per DAO — splitting would fragment the repository
+@Suppress("LongParameterList")
 class RoomPeriodRepository(
     private val db: PeriodDatabase,
     private val periodDao: PeriodDao,
@@ -81,7 +89,30 @@ class RoomPeriodRepository(
     private val waterIntakeDao: WaterIntakeDao,
     private val customTagDao: CustomTagDao,
     private val customTagLogDao: CustomTagLogDao,
+    private val userCycleSettingsDao: UserCycleSettingsDao,
 ) : PeriodRepository {
+
+    /** @see PeriodRepository.observeCycleSettings */
+    override fun observeCycleSettings(): Flow<CycleSettings> =
+        userCycleSettingsDao.observe().map { entity ->
+            entity?.toDomain() ?: CycleSettings()
+        }
+
+    /** @see PeriodRepository.setTypicalCycleLengthDays */
+    override suspend fun setTypicalCycleLengthDays(days: Int?) {
+        val current = userCycleSettingsDao.get()?.toDomain() ?: CycleSettings()
+        userCycleSettingsDao.upsert(
+            UserCycleSettingsEntity.fromDomain(current.copy(typicalCycleLengthDays = days))
+        )
+    }
+
+    /** @see PeriodRepository.setDefaultPeriodLengthDays */
+    override suspend fun setDefaultPeriodLengthDays(days: Int) {
+        val current = userCycleSettingsDao.get()?.toDomain() ?: CycleSettings()
+        userCycleSettingsDao.upsert(
+            UserCycleSettingsEntity.fromDomain(current.copy(defaultPeriodLengthDays = days))
+        )
+    }
     /** @see PeriodRepository.getAllPeriods */
     override fun getAllPeriods(): Flow<List<Period>> {
         return periodDao.getAllPeriods().map { entityList ->
@@ -419,14 +450,25 @@ class RoomPeriodRepository(
     override fun observeDayDetails(): Flow<Map<LocalDate, DayDetails>> {
         return combine(
             getAllPeriods(),
-            getAllLogs()
-        ) { cycles, allLogs ->
+            getAllLogs(),
+            observeCycleSettings()
+        ) { cycles, allLogs, cycleSettings ->
             val detailsMap = mutableMapOf<LocalDate, DayDetails>()
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            val avgCycleLength = CyclePhaseCalculator.averageCycleLength(cycles)
+            // Resolved lengths (issues #143/#145): phases render from the first
+            // logged period instead of after two completed cycles
+            val cycleLength = CycleLengthResolver
+                .resolve(cycles, cycleSettings.typicalCycleLengthDays).days
+            val assumedPeriodLength = PeriodLengthResolver
+                .resolve(cycles, cycleSettings.defaultPeriodLengthDays)
 
             for (cycle in cycles) {
-                val endDate = cycle.endDate ?: today
+                // Ongoing periods paint at most the assumed period length — not
+                // every day through today (issue #145's "never follicular" bug)
+                val endDate = cycle.endDate ?: minOf(
+                    today,
+                    cycle.startDate.plus(assumedPeriodLength - 1, DateTimeUnit.DAY),
+                )
                 var currentDate = cycle.startDate
 
                 while (currentDate <= endDate) {
@@ -442,7 +484,7 @@ class RoomPeriodRepository(
                 val date = log.entry.entryDate
                 val existingInfo = detailsMap[date] ?: DayDetails()
                 val phase = existingInfo.cyclePhase
-                    ?: CyclePhaseCalculator.calculatePhase(date, cycles, avgCycleLength)
+                    ?: CyclePhaseCalculator.calculatePhase(date, cycles, cycleLength, assumedPeriodLength)
                 detailsMap[date] = existingInfo.copy(
                     isPeriodDay = existingInfo.isPeriodDay || log.periodLog != null,
                     hasLoggedSymptoms = log.symptomLogs.isNotEmpty(),
@@ -458,7 +500,9 @@ class RoomPeriodRepository(
                 var fillDate = earliest
                 while (fillDate <= today) {
                     if (fillDate !in detailsMap) {
-                        val phase = CyclePhaseCalculator.calculatePhase(fillDate, cycles, avgCycleLength)
+                        val phase = CyclePhaseCalculator.calculatePhase(
+                            fillDate, cycles, cycleLength, assumedPeriodLength
+                        )
                         if (phase != null) {
                             detailsMap[fillDate] = DayDetails(cyclePhase = phase)
                         }
@@ -790,18 +834,71 @@ class RoomPeriodRepository(
             }
 
             // Ensure a PeriodLog exists for this date across all scenarios.
-            val entry = dailyEntryDao.getEntryForDate(date).firstOrNull()?.toDomain()
-            if (entry != null) {
-                val existingLog = periodLogDao.getLogForEntry(entry.id).firstOrNull()
-                if (existingLog == null) {
-                    periodLogDao.insert(PeriodLog(
-                        id = uuid4().toString(),
-                        entryId = entry.id,
-                        createdAt = Clock.System.now(),
-                        updatedAt = Clock.System.now()
-                    ).toEntity())
-                }
+            ensurePeriodLogForDate(date)
+        }
+    }
+
+    /** Creates an empty [PeriodLog] for [date]'s entry when one doesn't exist yet. */
+    private suspend fun ensurePeriodLogForDate(date: LocalDate) {
+        val entry = dailyEntryDao.getEntryForDate(date).firstOrNull()?.toDomain() ?: return
+        val existingLog = periodLogDao.getLogForEntry(entry.id).firstOrNull()
+        if (existingLog == null) {
+            periodLogDao.insert(PeriodLog(
+                id = uuid4().toString(),
+                entryId = entry.id,
+                createdAt = Clock.System.now(),
+                updatedAt = Clock.System.now()
+            ).toEntity())
+        }
+    }
+
+    /**
+     * Marks [date] as a period start with auto-fill (issue #144).
+     *
+     * Island days create `date .. date + N-1` in one transaction, where N is
+     * resolved by [PeriodLengthResolver] and the range is clamped to end the day
+     * before the next existing period. Non-island days delegate to
+     * [logPeriodDay] unchanged, so drag-editing and merge semantics are
+     * byte-identical to before.
+     *
+     * @see PeriodRepository.logPeriodStart
+     */
+    override suspend fun logPeriodStart(date: LocalDate): PeriodStartResult {
+        return db.withTransaction {
+            val periodBefore = getPeriodForDate(date.minus(1, DateTimeUnit.DAY))
+            val periodAfter = getPeriodForDate(date.plus(1, DateTimeUnit.DAY))
+            val periodContaining = getPeriodForDate(date)
+
+            if (periodContaining != null || periodBefore != null || periodAfter != null) {
+                // Not a fresh start — reuse the single-day state machine
+                logPeriodDay(date)
+                return@withTransaction PeriodStartResult(
+                    autoFilled = false,
+                    periodId = null,
+                    filledStart = date,
+                    filledEnd = date,
+                )
             }
+
+            val allPeriods = getAllPeriods().first()
+            val settings = userCycleSettingsDao.get()?.toDomain() ?: CycleSettings()
+            val fillLength = PeriodLengthResolver.resolve(allPeriods, settings.defaultPeriodLengthDays)
+
+            // Clamp: never touch the next existing period (adjacency is fine)
+            val nextPeriodStart = allPeriods.map { it.startDate }.filter { it > date }.minOrNull()
+            val cap = nextPeriodStart?.minus(1, DateTimeUnit.DAY)
+            var fillEnd = date.plus(fillLength - 1, DateTimeUnit.DAY)
+            if (cap != null && fillEnd > cap) fillEnd = cap
+
+            val created = createCompletedPeriod(date, fillEnd)
+            ensurePeriodLogForDate(date)
+
+            PeriodStartResult(
+                autoFilled = fillEnd > date,
+                periodId = created.id,
+                filledStart = date,
+                filledEnd = fillEnd,
+            )
         }
     }
 

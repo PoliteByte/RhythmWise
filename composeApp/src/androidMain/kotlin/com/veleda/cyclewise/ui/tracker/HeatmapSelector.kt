@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.models.HeatmapMetric
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 
 /**
@@ -30,6 +32,7 @@ internal fun HeatmapSelector(
     modifier: Modifier = Modifier,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     val metrics = listOf(
         HeatmapMetric.Mood,
         HeatmapMetric.Energy,
@@ -48,7 +51,11 @@ internal fun HeatmapSelector(
     ) {
         FilterChip(
             selected = selectedMetric == null,
-            onClick = { onMetricSelected(null) },
+            onClick = {
+                // Silent when nothing is selected — tapping "Off" is then a no-op.
+                if (selectedMetric != null) sounds.play(SoundEffect.DESELECT)
+                onMetricSelected(null)
+            },
             label = { Text(stringResource(R.string.heatmap_off)) },
         )
 
@@ -56,7 +63,9 @@ internal fun HeatmapSelector(
             FilterChip(
                 selected = selectedMetric == metric,
                 onClick = {
-                    onMetricSelected(if (selectedMetric == metric) null else metric)
+                    val deselecting = selectedMetric == metric
+                    sounds.play(if (deselecting) SoundEffect.DESELECT else SoundEffect.SELECT)
+                    onMetricSelected(if (deselecting) null else metric)
                 },
                 label = { Text(metric.label) },
             )

@@ -29,6 +29,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.reminders.ReminderNotifier
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
+import com.veleda.cyclewise.sound.playOnChange
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import kotlin.math.roundToInt
 
@@ -81,6 +84,7 @@ fun ReminderSettings(
 ) {
     val context = LocalContext.current
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     // --- Notification permission handling (requires @Composable context) ---
     var pendingEnableAction by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -130,12 +134,14 @@ fun ReminderSettings(
                         if (checked) {
                             ensurePermissionThen {
                                 if (periodPrivacyAccepted) {
+                                    sounds.play(SoundEffect.TOGGLE_ON)
                                     onEvent(SettingsEvent.PeriodReminderToggled(true))
                                 } else {
                                     onEvent(SettingsEvent.ShowPrivacyDialog)
                                 }
                             }
                         } else {
+                            sounds.play(SoundEffect.TOGGLE_OFF)
                             onEvent(SettingsEvent.PeriodReminderToggled(false))
                         }
                     }
@@ -151,7 +157,10 @@ fun ReminderSettings(
                     listOf(1, 2, 3).forEach { days ->
                         FilterChip(
                             selected = periodDaysBefore == days,
-                            onClick = { onEvent(SettingsEvent.PeriodDaysBeforeChanged(days)) },
+                            onClick = {
+                                sounds.playOnChange(SoundEffect.SELECT, periodDaysBefore, days)
+                                onEvent(SettingsEvent.PeriodDaysBeforeChanged(days))
+                            },
                             label = { Text("$days") }
                         )
                     }
@@ -172,9 +181,11 @@ fun ReminderSettings(
                     onCheckedChange = { checked ->
                         if (checked) {
                             ensurePermissionThen {
+                                sounds.play(SoundEffect.TOGGLE_ON)
                                 onEvent(SettingsEvent.MedicationReminderToggled(true))
                             }
                         } else {
+                            sounds.play(SoundEffect.TOGGLE_OFF)
                             onEvent(SettingsEvent.MedicationReminderToggled(false))
                         }
                     }
@@ -200,7 +211,9 @@ fun ReminderSettings(
                         Slider(
                             value = medicationHour.toFloat(),
                             onValueChange = { newHour ->
-                                onEvent(SettingsEvent.MedicationHourChanged(newHour.roundToInt()))
+                                val rounded = newHour.roundToInt()
+                                sounds.playOnChange(SoundEffect.TICK, medicationHour, rounded)
+                                onEvent(SettingsEvent.MedicationHourChanged(rounded))
                             },
                             valueRange = 0f..23f,
                             steps = 22,
@@ -217,7 +230,9 @@ fun ReminderSettings(
                         Slider(
                             value = medicationMinute.toFloat(),
                             onValueChange = { newMinute ->
-                                onEvent(SettingsEvent.MedicationMinuteChanged(newMinute.roundToInt()))
+                                val rounded = newMinute.roundToInt()
+                                sounds.playOnChange(SoundEffect.TICK, medicationMinute, rounded)
+                                onEvent(SettingsEvent.MedicationMinuteChanged(rounded))
                             },
                             valueRange = 0f..59f,
                             steps = 58,
@@ -241,9 +256,11 @@ fun ReminderSettings(
                     onCheckedChange = { checked ->
                         if (checked) {
                             ensurePermissionThen {
+                                sounds.play(SoundEffect.TOGGLE_ON)
                                 onEvent(SettingsEvent.HydrationReminderToggled(true))
                             }
                         } else {
+                            sounds.play(SoundEffect.TOGGLE_OFF)
                             onEvent(SettingsEvent.HydrationReminderToggled(false))
                         }
                     }
@@ -260,7 +277,9 @@ fun ReminderSettings(
                 Slider(
                     value = hydrationGoalCups.toFloat(),
                     onValueChange = { newValue ->
-                        onEvent(SettingsEvent.HydrationGoalCupsChanged(newValue.roundToInt()))
+                        val rounded = newValue.roundToInt()
+                        sounds.playOnChange(SoundEffect.TICK, hydrationGoalCups, rounded)
+                        onEvent(SettingsEvent.HydrationGoalCupsChanged(rounded))
                     },
                     valueRange = 1f..20f,
                     steps = 18,
@@ -274,7 +293,10 @@ fun ReminderSettings(
                     listOf(2, 3, 4).forEach { hours ->
                         FilterChip(
                             selected = hydrationFrequencyHours == hours,
-                            onClick = { onEvent(SettingsEvent.HydrationFrequencyChanged(hours)) },
+                            onClick = {
+                                sounds.playOnChange(SoundEffect.SELECT, hydrationFrequencyHours, hours)
+                                onEvent(SettingsEvent.HydrationFrequencyChanged(hours))
+                            },
                             label = { Text("${hours}h") }
                         )
                     }
@@ -291,7 +313,9 @@ fun ReminderSettings(
                         Slider(
                             value = hydrationStartHour.toFloat(),
                             onValueChange = { newValue ->
-                                onEvent(SettingsEvent.HydrationStartHourChanged(newValue.roundToInt()))
+                                val rounded = newValue.roundToInt()
+                                sounds.playOnChange(SoundEffect.TICK, hydrationStartHour, rounded)
+                                onEvent(SettingsEvent.HydrationStartHourChanged(rounded))
                             },
                             valueRange = 0f..23f,
                             steps = 22
@@ -303,7 +327,9 @@ fun ReminderSettings(
                         Slider(
                             value = hydrationEndHour.toFloat(),
                             onValueChange = { newValue ->
-                                onEvent(SettingsEvent.HydrationEndHourChanged(newValue.roundToInt()))
+                                val rounded = newValue.roundToInt()
+                                sounds.playOnChange(SoundEffect.TICK, hydrationEndHour, rounded)
+                                onEvent(SettingsEvent.HydrationEndHourChanged(rounded))
                             },
                             valueRange = 0f..23f,
                             steps = 22

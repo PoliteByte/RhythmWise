@@ -19,6 +19,8 @@ import com.veleda.cyclewise.domain.providers.EducationalContentProvider
 import com.veleda.cyclewise.domain.providers.MedicationLibraryProvider
 import com.veleda.cyclewise.domain.providers.SymptomLibraryProvider
 import com.veleda.cyclewise.domain.repository.PeriodRepository
+import com.veleda.cyclewise.domain.usecases.CycleStatus
+import com.veleda.cyclewise.domain.usecases.GetCycleStatusUseCase
 import com.veleda.cyclewise.domain.usecases.DeleteCustomTagUseCase
 import com.veleda.cyclewise.domain.usecases.DeleteMedicationUseCase
 import com.veleda.cyclewise.domain.usecases.DeleteSymptomUseCase
@@ -77,6 +79,8 @@ data class DailyLogUiState(
     val medicationLibrary: List<Medication> = emptyList(),
     val customTagLibrary: List<CustomTag> = emptyList(),
     val isPeriodDay: Boolean = false,
+    /** Glanceable cycle status for the home-screen banner (issue #142), or null while loading. */
+    val cycleStatus: CycleStatus? = null,
     val waterCups: Int = 0,
     val educationalArticles: List<EducationalArticle>? = null,
     val errorMessage: String? = null,
@@ -125,6 +129,8 @@ data class DailyLogUiState(
  *
  * Session-scoped (destroyed on logout/autolock).
  */
+// One parameter per injected use case/provider — the DI graph is the source of truth
+@Suppress("LongParameterList")
 class DailyLogViewModel(
     private val entryDate: LocalDate,
     private val periodRepository: PeriodRepository,
@@ -140,10 +146,22 @@ class DailyLogViewModel(
     private val renameCustomTagUseCase: RenameCustomTagUseCase,
     private val deleteCustomTagUseCase: DeleteCustomTagUseCase,
     private val hintPreferences: HintPreferences,
+    private val getCycleStatus: GetCycleStatusUseCase? = null,
 ) : ViewModel()
 {
     private val _uiState = MutableStateFlow(DailyLogUiState())
     val uiState: StateFlow<DailyLogUiState> = _uiState.asStateFlow()
+
+    init {
+        // Glanceable cycle status for the home-screen banner (issue #142).
+        // Nullable use case keeps existing direct-construction tests compiling.
+        getCycleStatus?.let { useCase ->
+            viewModelScope.launch {
+                val status = useCase(entryDate)
+                _uiState.update { it.copy(cycleStatus = status) }
+            }
+        }
+    }
 
     /** Active debounce job for [DailyLogEvent.NoteChanged] auto-save. */
     private var noteDebounceJob: Job? = null
@@ -324,7 +342,9 @@ class DailyLogViewModel(
             is DailyLogEvent.PeriodToggled -> {
                 if (event.isOnPeriod) {
                     viewModelScope.launch {
-                        periodRepository.logPeriodDay(entryDate)
+                        // Auto-fills the expected duration on a fresh start (issue #144);
+                        // behaves exactly like logPeriodDay for non-island days
+                        periodRepository.logPeriodStart(entryDate)
                         _uiState.update { it.copy(isPeriodDay = true) }
                     }
                     autoSave()

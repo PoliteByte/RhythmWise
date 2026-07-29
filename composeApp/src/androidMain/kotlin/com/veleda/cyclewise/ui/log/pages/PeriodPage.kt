@@ -37,9 +37,12 @@ import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.models.FlowIntensity
 import com.veleda.cyclewise.domain.models.PeriodColor
 import com.veleda.cyclewise.domain.models.PeriodConsistency
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.coachmark.CoachMarkState
 import com.veleda.cyclewise.ui.coachmark.HintKey
 import com.veleda.cyclewise.ui.coachmark.coachMarkTarget
+import com.veleda.cyclewise.ui.components.flowIntensityLabel
 import com.veleda.cyclewise.ui.log.components.SectionCard
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 
@@ -81,6 +84,7 @@ internal fun PeriodPage(
     activeHintKey: HintKey? = null,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     val toggleEnabled = activeHintKey == null || activeHintKey == HintKey.DAILY_LOG_PERIOD_TOGGLE
     Column(
         modifier = Modifier
@@ -116,7 +120,10 @@ internal fun PeriodPage(
                 )
                 Switch(
                     checked = isPeriodDay,
-                    onCheckedChange = onPeriodToggled,
+                    onCheckedChange = { checked ->
+                        sounds.play(if (checked) SoundEffect.TOGGLE_ON else SoundEffect.TOGGLE_OFF)
+                        onPeriodToggled(checked)
+                    },
                     enabled = toggleEnabled,
                     modifier = Modifier.testTag("period_toggle"),
                 )
@@ -184,7 +191,7 @@ internal fun PeriodPage(
         }
 
         FilledTonalButton(
-            onClick = onDone,
+            onClick = { sounds.play(SoundEffect.TAP); onDone() },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.daily_log_done_button))
@@ -208,6 +215,7 @@ internal fun FlowIntensitySelector(
     selectedIntensity: FlowIntensity?,
     onSelectionChanged: (FlowIntensity?) -> Unit
 ) {
+    val sounds = LocalSoundEffects.current
     val options = FlowIntensity.entries
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -218,9 +226,10 @@ internal fun FlowIntensitySelector(
                 selected = selectedIntensity == intensity,
                 onClick = {
                     val newSelection = if (selectedIntensity == intensity) null else intensity
+                    sounds.play(if (newSelection == null) SoundEffect.DESELECT else SoundEffect.SELECT)
                     onSelectionChanged(newSelection)
                 },
-                label = { Text(intensity.name.replaceFirstChar { it.uppercase() }) }
+                label = { Text(flowIntensityLabel(intensity)) }
             )
         }
     }
@@ -239,6 +248,7 @@ internal fun PeriodColorSelector(
     selectedColor: PeriodColor?,
     onSelectionChanged: (PeriodColor?) -> Unit
 ) {
+    val sounds = LocalSoundEffects.current
     val labels = mapOf(
         PeriodColor.PINK to stringResource(R.string.period_color_pink),
         PeriodColor.BRIGHT_RED to stringResource(R.string.period_color_bright_red),
@@ -256,6 +266,7 @@ internal fun PeriodColorSelector(
                 selected = selectedColor == color,
                 onClick = {
                     val newSelection = if (selectedColor == color) null else color
+                    sounds.play(if (newSelection == null) SoundEffect.DESELECT else SoundEffect.SELECT)
                     onSelectionChanged(newSelection)
                 },
                 label = { Text(label) }
@@ -277,6 +288,7 @@ internal fun PeriodConsistencySelector(
     selectedConsistency: PeriodConsistency?,
     onSelectionChanged: (PeriodConsistency?) -> Unit
 ) {
+    val sounds = LocalSoundEffects.current
     val labels = mapOf(
         PeriodConsistency.THIN to stringResource(R.string.period_consistency_thin),
         PeriodConsistency.MODERATE to stringResource(R.string.period_consistency_moderate),
@@ -294,6 +306,7 @@ internal fun PeriodConsistencySelector(
                 selected = selectedConsistency == consistency,
                 onClick = {
                     val newSelection = if (selectedConsistency == consistency) null else consistency
+                    sounds.play(if (newSelection == null) SoundEffect.DESELECT else SoundEffect.SELECT)
                     onSelectionChanged(newSelection)
                 },
                 label = { Text(label) }

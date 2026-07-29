@@ -79,7 +79,9 @@ object ReminderNotifier {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            // Status-bar icons render as alpha silhouettes; the full-color launcher
+            // icon would flatten to a gray disc here.
+            .setSmallIcon(R.mipmap.ic_launcher_monochrome)
             .setContentTitle(context.getString(R.string.reminder_notification_title))
             .setContentText(context.getString(R.string.reminder_notification_body))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

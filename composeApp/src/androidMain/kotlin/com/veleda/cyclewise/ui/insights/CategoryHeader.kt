@@ -19,6 +19,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.stringResource
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.insights.InsightCategory
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 
 /**
@@ -36,6 +38,7 @@ internal fun CategoryHeader(
     modifier: Modifier = Modifier,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 180f else 0f,
         label = "chevron_rotation",
@@ -52,7 +55,12 @@ internal fun CategoryHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onToggle)
+            .clickable(
+                onClick = {
+                    sounds.play(SoundEffect.TAP_LIGHT)
+                    onToggle()
+                },
+            )
             .padding(vertical = dims.sm),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,

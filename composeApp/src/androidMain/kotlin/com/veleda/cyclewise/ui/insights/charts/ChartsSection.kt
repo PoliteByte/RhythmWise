@@ -26,6 +26,7 @@ import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.insights.charts.BarChartData
 import com.veleda.cyclewise.domain.insights.charts.ChartData
 import com.veleda.cyclewise.domain.insights.charts.LineChartData
+import com.veleda.cyclewise.sound.PagerSoundEffect
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 
 private val CHART_HEIGHT = 200.dp
@@ -49,6 +50,8 @@ internal fun ChartsSection(
 
     val dims = LocalDimensions.current
     val pagerState = rememberPagerState(pageCount = { charts.size })
+
+    PagerSoundEffect(pagerState)
 
     Column(
         modifier = modifier.fillMaxWidth(),

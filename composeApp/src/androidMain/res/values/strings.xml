@@ -36,17 +36,24 @@
     <string name="phase_color_reset_defaults">Reset to Defaults</string>
     <string name="phase_color_hex_hint">Hex (e.g. EF9A9A)</string>
     <string name="phase_color_invalid_hex">Invalid hex code</string>
+    <string name="color_picker_title">Pick a color for %1$s</string>
+    <string name="color_picker_hue">Hue</string>
+    <string name="color_picker_saturation">Saturation</string>
+    <string name="color_picker_brightness">Brightness</string>
+    <string name="color_picker_apply">Apply</string>
+    <string name="color_picker_cancel">Cancel</string>
+    <string name="color_row_edit_cd">Edit %1$s color</string>
 
     <!-- Reminders -->
     <string name="reminder_settings_title">Reminders</string>
     <string name="reminder_period_label">Period Prediction</string>
-    <string name="reminder_period_description">Notify before your predicted next period</string>
+    <string name="reminder_period_description">Notifies you before your predicted next period.</string>
     <string name="reminder_period_days_before_label">Days before: %d</string>
     <string name="reminder_medication_label">Daily Medication</string>
-    <string name="reminder_medication_description">A daily reminder at your chosen time</string>
+    <string name="reminder_medication_description">Reminds you to take your medication at your chosen time each day.</string>
     <string name="reminder_medication_time_label">Reminder time</string>
     <string name="reminder_hydration_label">Hydration</string>
-    <string name="reminder_hydration_description">Remind to log water during the day</string>
+    <string name="reminder_hydration_description">Reminds you to log your water intake during the day.</string>
     <string name="reminder_hydration_goal_label">Daily goal (cups): %d</string>
     <string name="reminder_hydration_frequency_label">Reminder frequency</string>
     <string name="reminder_hydration_start_label">Start hour</string>
@@ -62,6 +69,18 @@
     <!-- Daily Log Wellness empty state -->
     <string name="daily_log_wellness_empty_prompt">Start by rating your mood or energy, or log your water intake.</string>
     <string name="daily_log_wellness_empty_icon_cd">Get started prompt</string>
+    <string name="tracker_empty_close_cd">Dismiss</string>
+    <string name="period_autofill_snackbar">Marked %1$d days — drag to adjust</string>
+    <string name="period_autofill_undo">Undo</string>
+    <string name="wellness_score_of_five">%1$d/5</string>
+    <string name="cycle_status_on_period">Day %1$d of your period</string>
+    <plurals name="cycle_status_predicted">
+        <item quantity="one">Period expected tomorrow</item>
+        <item quantity="other">Period expected in %1$d days</item>
+    </plurals>
+    <string name="cycle_status_due">Period expected any day now</string>
+    <string name="cycle_status_no_data">No period logged yet</string>
+    <string name="cycle_status_no_data_hint">Log your first period to see predictions.</string>
 
     <!-- Tracker calendar empty state -->
     <string name="tracker_empty_title">Your Calendar Is Empty</string>
@@ -169,26 +188,28 @@
     <string name="coach_mark_next">Next</string>
     <string name="coach_mark_got_it">Got it</string>
     <string name="coach_mark_hold_to_skip">Hold to skip</string>
+    <string name="coach_mark_step_indicator">Step %1$d of %2$d</string>
+    <string name="coach_mark_skip">Skip tutorial</string>
     <string name="coach_mark_tap_to_continue">Tap this card to continue</string>
     <string name="coach_mark_tap_to_finish">Tap this card to finish</string>
     <string name="hint_daily_log_welcome_title">Welcome to Your Daily Log</string>
     <string name="hint_daily_log_welcome_body">This is your daily log. We\'ve added demo data so you can explore. Let\'s walk through the features.</string>
     <string name="hint_daily_log_mood_title">Track Your Mood</string>
-    <string name="hint_daily_log_mood_body">Tap one of the stars below to rate your mood from 1 to 5.</string>
+    <string name="hint_daily_log_mood_body">Tap one of the stars in the highlighted Mood card to rate your mood from 1 to 5.</string>
     <string name="hint_daily_log_energy_title">Log Your Energy</string>
-    <string name="hint_daily_log_energy_body">Tap one of the stars below to rate your energy level from 1 to 5.</string>
+    <string name="hint_daily_log_energy_body">Tap one of the stars in the highlighted Energy card to rate your energy level from 1 to 5.</string>
     <string name="hint_daily_log_water_title">Stay Hydrated</string>
-    <string name="hint_daily_log_water_body">Tap the + button below to log a cup of water.</string>
+    <string name="hint_daily_log_water_body">Tap the + button in the highlighted Water card to log a cup — as many times as you like. Tap this card when you\'re ready to continue.</string>
     <string name="hint_daily_log_explore_tabs_title">Explore the Tabs</string>
     <string name="hint_daily_log_explore_tabs_body">Each tab focuses on a different part of your day. You can swipe or tap any tab to switch.</string>
     <string name="hint_daily_log_period_tab_title">The Period Tab</string>
-    <string name="hint_daily_log_period_tab_body">Tap the Period tab above to explore period tracking.</string>
+    <string name="hint_daily_log_period_tab_body">The Period tab is where you log flow, color, and consistency for a period day. Tap it to take a look.</string>
     <string name="hint_daily_log_period_toggle_title">Mark a Period Day</string>
-    <string name="hint_daily_log_period_toggle_body">Tap the toggle switch below to mark today as a period day.</string>
+    <string name="hint_daily_log_period_toggle_body">Tap the highlighted toggle switch to mark today as a period day.</string>
     <string name="hint_daily_log_symptoms_tab_title">The Symptoms Tab</string>
-    <string name="hint_daily_log_symptoms_tab_body">Tap the Symptoms tab above to continue.</string>
+    <string name="hint_daily_log_symptoms_tab_body">The Symptoms tab tracks cramps, headaches, and anything else you feel, with severity ratings. Tap it to take a look.</string>
     <string name="hint_daily_log_medications_tab_title">The Medications Tab</string>
-    <string name="hint_daily_log_medications_tab_body">Tap the Medications tab above to continue.</string>
+    <string name="hint_daily_log_medications_tab_body">The Medications tab keeps a log of what you take and when. Tap it to take a look.</string>
     <string name="hint_daily_log_notes_tab_title">Notes &amp; Tags</string>
     <string name="hint_daily_log_notes_tab_body">This is your private journal - add freeform notes or quick tags to remember anything about your day.</string>
     <string name="coach_mark_no_periods">I don\'t have periods</string>
@@ -212,10 +233,16 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
-    <string name="settings_autolock_title">Auto-lock timeout (minutes)</string>
+    <string name="settings_autolock_title">Auto-lock timeout</string>
+    <string name="settings_autolock_immediately">Immediately</string>
+    <string name="settings_autolock_never">Never</string>
+    <string name="autolock_never_dialog_title">Turn off auto-lock?</string>
+    <string name="autolock_never_dialog_body">Your data will stay unlocked until you tap Lock Now or fully close the app. Anyone who picks up your phone while the app is open will be able to read your data. Opening the app after a full close still requires your passphrase.</string>
+    <string name="autolock_never_dialog_confirm">Turn Off</string>
+    <string name="autolock_never_dialog_cancel">Cancel</string>
     <string name="settings_security_title">Security</string>
     <string name="settings_lock_button">Lock Now</string>
-    <string name="settings_locked_message">Currently locked - unlock to access secured data.</string>
+    <string name="settings_locked_message">Currently locked. Unlock the app to access your secured data.</string>
     <string name="settings_insights_title">Insight Settings</string>
     <string name="settings_top_symptoms">Top Frequent Symptoms to Display: %d</string>
     <string name="settings_developer_title">Developer Options</string>
@@ -227,6 +254,10 @@
     <string name="settings_section_display">Display</string>
     <string name="settings_section_customization">Customization</string>
     <string name="settings_section_notifications">Notifications</string>
+    <string name="settings_section_sound">Sound</string>
+    <string name="sound_effects_label">UI sound effects</string>
+    <string name="sound_effects_description">Audio feedback for taps, swipes, and actions. Mainly an accessibility aid for when the screen is hard to see.</string>
+    <string name="settings_sound_volume">Volume: %1$d%%</string>
     <string name="settings_section_theme">Theme</string>
     <string name="theme_mode_system">System</string>
     <string name="theme_mode_light">Light</string>
@@ -242,8 +273,15 @@
     <string name="settings_section_calendar_display">Calendar Display</string>
     <string name="settings_section_app_info">App Info</string>
     <string name="settings_section_utilities">Utilities</string>
+    <string name="settings_section_cycle">Cycle</string>
+    <string name="settings_cycle_locked">Unlock the app to edit your cycle settings.</string>
+    <string name="settings_typical_cycle_length">Typical cycle length: %1$d days</string>
+    <string name="settings_typical_cycle_length_unset">Typical cycle length: not set</string>
+    <string name="settings_typical_cycle_length_description">Used for predictions and phase coloring until enough cycles are logged. Your logged history takes over automatically.</string>
+    <string name="settings_default_period_length">Default period length: %1$d days</string>
+    <string name="settings_default_period_length_description">How many days are marked automatically when you log a new period start. Drag on the calendar to adjust any period afterwards.</string>
     <string name="settings_section_phase_colors">Phase Colors</string>
-    <string name="settings_autolock_description">Lock the app after inactivity</string>
+    <string name="settings_autolock_description">Locks the app automatically after a period of inactivity.</string>
     <string name="settings_autolock_minutes_unit">min</string>
     <string name="show_mood_description">Display mood score in daily log summary</string>
     <string name="show_energy_description">Display energy level in daily log summary</string>
@@ -256,12 +294,12 @@
 
     <!-- Tutorial -->
     <string name="settings_section_tutorial">Tutorial</string>
-    <string name="settings_reset_hints">Reset Tutorial Hints</string>
-    <string name="settings_reset_hints_description">Show the guided walkthrough again next time you open a screen</string>
-    <string name="settings_reset_hints_confirmation">Tutorial hints have been reset</string>
+    <string name="settings_reset_hints">Replay Tutorial</string>
+    <string name="settings_reset_hints_description">Replays the guided tour of the app. Your data is not affected.</string>
+    <string name="settings_reset_hints_confirmation">Tutorial reset. It will replay when you next open the Home or Calendar tab.</string>
 
     <!-- Passphrase -->
-    <string name="passphrase_unlocking">Unlocking…</string>
+    <string name="passphrase_unlocking">Unlocking your data…</string>
     <string name="passphrase_instruction">Enter your passphrase</string>
     <string name="passphrase_label">Passphrase</string>
     <string name="passphrase_unlock">Unlock</string>
@@ -272,6 +310,14 @@
     <string name="passphrase_water_toggle">Quick log water</string>
 
     <!-- Setup / Onboarding -->
+    <string name="setup_period_length_title">How Long Does Your Period Usually Last?</string>
+    <string name="setup_period_length_body">The days you actually bleed — most people know this one. RhythmWise uses it to mark the right number of days when you log a period start. Not sure? Skip it.</string>
+    <string name="setup_period_length_unset">Not set — 5 days will be assumed until you log a few periods.</string>
+    <string name="setup_cycle_length_title">What\'s Your Typical Cycle Length?</string>
+    <string name="setup_cycle_length_body">Count from the first day of one period to the first day of the next. If you\'re not sure, skip this — RhythmWise will learn your rhythm as you log, and you can set or change this any time in Settings.</string>
+    <string name="setup_cycle_length_days">%1$d days</string>
+    <string name="setup_cycle_length_unset">Not set — predictions start from a 28-day cycle until you log a few periods.</string>
+    <string name="setup_cycle_length_skip">Skip for now</string>
     <string name="setup_page1_title">Your Data Stays on This Device</string>
     <string name="setup_page1_body">RhythmWise stores everything you track right here on your phone. Your cycle data, symptoms, moods, and notes never leave this device. There is no account, no cloud sync, and no way for anyone (including us) to see your information.\n\nTo keep your data safe, the app encrypts it with a passphrase that only you know. Think of it as a lock on a private journal. Without the right passphrase, the data is unreadable.</string>
     <string name="setup_page2_title">Choosing a Passphrase You Will Remember</string>
@@ -325,7 +371,13 @@
     <string name="insights_chart_legend_cd">Chart legend</string>
     <string name="heatmap_intensity_low">Low</string>
     <string name="heatmap_intensity_high">High</string>
-    <string name="heatmap_off">Off</string>
+    <string name="heatmap_off">No heatmap</string>
+    <string name="educational_expand_cd">Expand %1$s</string>
+    <string name="educational_collapse_cd">Collapse %1$s</string>
+    <string name="flow_intensity_light">Light</string>
+    <string name="flow_intensity_medium">Medium</string>
+    <string name="flow_intensity_heavy">Heavy</string>
+    <string name="score_of_five">%1$d of 5</string>
     <string name="heatmap_section_label">Heatmap</string>
     <string name="heatmap_colors_title">Heatmap Colors</string>
     <string name="heatmap_color_mood_label">Mood</string>
@@ -401,7 +453,7 @@
 
     <!-- Change Passphrase -->
     <string name="settings_change_passphrase">Change Passphrase</string>
-    <string name="settings_change_passphrase_description">Update the passphrase that protects your data</string>
+    <string name="settings_change_passphrase_description">Updates the passphrase that protects your data.</string>
     <string name="settings_change_passphrase_title">Change Passphrase</string>
     <string name="settings_change_passphrase_current_label">Current passphrase</string>
     <string name="settings_change_passphrase_new_label">New passphrase</string>
@@ -468,7 +520,7 @@
     <!-- Data Management -->
     <string name="settings_section_data_management">Data Management</string>
     <string name="settings_delete_all_data">Delete All Data</string>
-    <string name="settings_delete_all_data_description">Permanently erase all data and return to a fresh install</string>
+    <string name="settings_delete_all_data_description">Permanently erases all of your data and returns the app to a fresh install.</string>
     <string name="settings_delete_first_title">Delete All Data?</string>
     <string name="settings_delete_first_body">This will permanently and irreversibly delete all of your data, including cycle history, daily logs, symptoms, medications, notes, preferences, and your encryption key.\n\nThis cannot be undone. The app will return to its initial setup screen as if freshly installed.</string>
     <string name="settings_delete_first_confirm">Delete Everything</string>

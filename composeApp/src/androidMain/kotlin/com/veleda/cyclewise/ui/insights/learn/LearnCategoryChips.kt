@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.veleda.cyclewise.R
 import com.veleda.cyclewise.domain.models.ArticleCategory
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 
 /**
@@ -29,6 +31,7 @@ internal fun LearnCategoryChips(
     modifier: Modifier = Modifier,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
 
     LazyRow(
         modifier = modifier.fillMaxWidth(),
@@ -37,14 +40,20 @@ internal fun LearnCategoryChips(
         item(key = "all") {
             FilterChip(
                 selected = selectedCategory == null,
-                onClick = { onCategorySelected(null) },
+                onClick = {
+                    if (selectedCategory != null) sounds.play(SoundEffect.DESELECT)
+                    onCategorySelected(null)
+                },
                 label = { Text(stringResource(R.string.article_category_all)) }
             )
         }
         items(ArticleCategory.entries.toList(), key = { it.name }) { category ->
             FilterChip(
                 selected = selectedCategory == category,
-                onClick = { onCategorySelected(category) },
+                onClick = {
+                    if (selectedCategory != category) sounds.play(SoundEffect.SELECT)
+                    onCategorySelected(category)
+                },
                 label = { Text(stringResource(categoryStringRes(category))) }
             )
         }

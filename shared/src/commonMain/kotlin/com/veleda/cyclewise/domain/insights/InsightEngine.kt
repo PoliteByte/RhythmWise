@@ -42,6 +42,7 @@ class InsightEngine(
         topSymptomsCount: Int,
         waterIntakes: List<WaterIntake> = emptyList(),
         medicationLibrary: List<Medication> = emptyList(),
+        typicalCycleLengthDays: Int? = null,
     ): List<ScoredInsight> {
         val insights = mutableListOf<Insight>()
 
@@ -53,6 +54,7 @@ class InsightEngine(
             topSymptomsCount = topSymptomsCount,
             waterIntakes = waterIntakes,
             medicationLibrary = medicationLibrary,
+            typicalCycleLengthDays = typicalCycleLengthDays,
         )
 
         val predictionGenerator = generators.find { it is NextPeriodPredictionGenerator }

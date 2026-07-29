@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import com.veleda.cyclewise.R
+import com.veleda.cyclewise.sound.LocalSoundEffects
+import com.veleda.cyclewise.sound.SoundEffect
 import com.veleda.cyclewise.ui.theme.LocalDimensions
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -53,6 +57,8 @@ private const val OVERLAY_SCRIM_ALPHA = 0.7f
  * Renders a semi-transparent scrim that blocks all touch events on the tracker
  * content beneath, plus a centered column with a calendar icon and instructional
  * text. The user can dismiss the overlay by:
+ * - **Tapping the close (X) button** in the card's top-end corner — the explicit
+ *   affordance added for discoverability (issue #147).
  * - **Swiping** horizontally in either direction past [DISMISS_FRACTION] of the
  *   container width, or flinging with velocity above [FLING_VELOCITY_THRESHOLD].
  * - **Tapping** anywhere, which auto-animates the content off-screen in the
@@ -69,6 +75,7 @@ fun EmptyStateOverlay(
     modifier: Modifier = Modifier,
 ) {
     val dims = LocalDimensions.current
+    val sounds = LocalSoundEffects.current
     val scrimColor = MaterialTheme.colorScheme.surface
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val coroutineScope = rememberCoroutineScope()
@@ -107,6 +114,7 @@ fun EmptyStateOverlay(
                             coroutineScope.launch {
                                 val progress = abs(offsetX.value) / containerWidthPx
                                 if (progress >= DISMISS_FRACTION) {
+                                    sounds.play(SoundEffect.SWIPE)
                                     // Commit dismiss in the drag direction.
                                     val target = if (offsetX.value > 0) containerWidthPx else -containerWidthPx
                                     offsetX.animateTo(target, tween(durationMillis = 200))
@@ -130,6 +138,7 @@ fun EmptyStateOverlay(
                 }
                 .pointerInput(Unit) {
                     detectTapGestures {
+                        sounds.play(SoundEffect.TAP_LIGHT)
                         coroutineScope.launch {
                             val target = if (isRtl) -containerWidthPx else containerWidthPx
                             offsetX.animateTo(target, tween(durationMillis = 300))
@@ -140,28 +149,56 @@ fun EmptyStateOverlay(
                 .testTag("emptyStateContent"),
             shape = MaterialTheme.shapes.medium,
         ) {
-            Column(
-                modifier = Modifier.padding(dims.lg),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(dims.sm),
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.CalendarMonth,
-                    contentDescription = stringResource(R.string.tracker_empty_icon_cd),
-                    modifier = Modifier.size(dims.iconLg),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = stringResource(R.string.tracker_empty_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = stringResource(R.string.tracker_empty_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
+            Box {
+                // Explicit close affordance — tap/swipe dismissal alone was not
+                // discoverable for beta testers (issue #147)
+                IconButton(
+                    onClick = {
+                        sounds.play(SoundEffect.TAP_LIGHT)
+                        coroutineScope.launch {
+                            val target = if (isRtl) -containerWidthPx else containerWidthPx
+                            offsetX.animateTo(target, tween(durationMillis = 300))
+                            onDismissed()
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .testTag("emptyStateClose"),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.tracker_empty_close_cd),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Column(
+                    modifier = Modifier.padding(
+                        start = dims.lg,
+                        end = dims.lg,
+                        bottom = dims.lg,
+                        top = dims.xl,
+                    ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(dims.sm),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.CalendarMonth,
+                        contentDescription = stringResource(R.string.tracker_empty_icon_cd),
+                        modifier = Modifier.size(dims.iconLg),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = stringResource(R.string.tracker_empty_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = stringResource(R.string.tracker_empty_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         }
     }

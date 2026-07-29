@@ -9,6 +9,7 @@ import com.veleda.cyclewise.domain.repository.PeriodRepository
 import com.veleda.cyclewise.testutil.TestData
 import com.veleda.cyclewise.testutil.testDatabaseModule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.*
@@ -41,7 +42,8 @@ class RoomCycleRepositoryTest : KoinTest {
                 periodLogDao = get(),
                 waterIntakeDao = get(),
                 customTagDao = get(),
-                customTagLogDao = get()
+                customTagLogDao = get(),
+                userCycleSettingsDao = get()
             )
         }
     }
@@ -267,5 +269,48 @@ class RoomCycleRepositoryTest : KoinTest {
         // ASSERT
         assertEquals(1, allLogs.size)
         assertEquals("mlog-1", allLogs.first().id)
+    }
+
+    // ── Cycle settings (issue #143) ─────────────────────────────────────
+
+    @Test
+    fun observeCycleSettings_WHEN_neverConfigured_THEN_emitsDefaults() = runTest {
+        // ACT
+        val settings = repository.observeCycleSettings().first()
+
+        // ASSERT — missing row means defaults, never null
+        assertEquals(null, settings.typicalCycleLengthDays)
+        assertEquals(5, settings.defaultPeriodLengthDays)
+    }
+
+    @Test
+    fun setTypicalCycleLengthDays_WHEN_setAndCleared_THEN_roundTripsThroughDb() = runTest {
+        // ACT — set
+        repository.setTypicalCycleLengthDays(31)
+
+        // ASSERT
+        assertEquals(31, repository.observeCycleSettings().first().typicalCycleLengthDays)
+
+        // ACT — clear
+        repository.setTypicalCycleLengthDays(null)
+
+        // ASSERT — cleared without touching the period-length setting
+        val cleared = repository.observeCycleSettings().first()
+        assertEquals(null, cleared.typicalCycleLengthDays)
+        assertEquals(5, cleared.defaultPeriodLengthDays)
+    }
+
+    @Test
+    fun setDefaultPeriodLengthDays_WHEN_set_THEN_preservesTypicalLength() = runTest {
+        // ARRANGE
+        repository.setTypicalCycleLengthDays(29)
+
+        // ACT
+        repository.setDefaultPeriodLengthDays(7)
+
+        // ASSERT — both fields survive independent updates
+        val settings = repository.observeCycleSettings().first()
+        assertEquals(29, settings.typicalCycleLengthDays)
+        assertEquals(7, settings.defaultPeriodLengthDays)
     }
 }

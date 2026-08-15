@@ -498,10 +498,23 @@ plugins {
 
 ```
 minSdk     = 26     (Android 8.0 Oreo)
-targetSdk  = 35     (Android 15)
-compileSdk = 35
+targetSdk  = 36     (Android 16)
+compileSdk = 36
 JVM target = 11
 ```
+
+Google Play requires the target API level to stay within one year of the latest
+Android release, so `targetSdk` is bumped on Play's schedule rather than on ours.
+Targeting Android 16 also makes three platform behaviors mandatory rather than
+optional; all three were already satisfied when the app moved to 36:
+
+- **Edge-to-edge cannot be opted out of.** `MainActivity` calls `enableEdgeToEdge()`
+  and each screen owns its insets (see §Window Insets in `CLAUDE.md`).
+- **Orientation and resizability restrictions are ignored on large screens.** The
+  manifest declares no `screenOrientation` or `resizableActivity`, so the app is
+  free to rotate and resize.
+- **Predictive back is on by default.** `android:enableOnBackInvokedCallback="true"`
+  is already set in the manifest.
 
 ### Room Schema Export
 

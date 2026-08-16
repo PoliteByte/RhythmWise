@@ -197,7 +197,7 @@ abstract class PeriodDatabase : RoomDatabase() {
          * Exposed as a constant so that [BackupManager] can embed it in the backup
          * metadata and check imported backups without reflection.
          */
-        const val SCHEMA_VERSION = 13
+        const val SCHEMA_VERSION = 14
 
         /**
          * Creates (or opens) the encrypted database backed by SQLCipher.

@@ -12,10 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Java 21 is required by Robolectric's Android SDK 36 runtime, which the
+      # unit tests resolve from the app's targetSdk. This is the JDK that runs
+      # Gradle and the tests; the compiled bytecode target stays at 11
+      # (see compileOptions / jvmTarget in composeApp/build.gradle.kts).
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4

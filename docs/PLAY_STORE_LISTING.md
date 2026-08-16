@@ -63,6 +63,22 @@ RhythmWise is free, open-source (Apache 2.0), and contains no ads or in-app purc
 
 ---
 
+## Production "What's New" (500 characters max)
+
+Standard release-notes text for the Play Console "What's new" field. Written for the
+v1.1.1 first production rollout; reuse it as the base for future releases, swapping the
+middle paragraphs for that release's changes. 457 characters as written.
+
+RhythmWise is a free, open-source, privacy-first health tracker for people with periods.
+
+Log your period, symptoms, mood, energy, medications, and more. See your cycle on a calendar, get predictions, and spot patterns over time.
+
+All your data stays on your device and is encrypted. RhythmWise has no internet access. Because your data stays on your device, you must use the built-in data export feature to move your data between devices.
+
+Proudly ad-free.
+
+---
+
 ## Content Rating Notes
 
 Notes for completing the IARC content rating questionnaire on Google Play Console.

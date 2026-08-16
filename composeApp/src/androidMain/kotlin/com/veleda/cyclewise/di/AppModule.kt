@@ -14,7 +14,6 @@ import com.veleda.cyclewise.domain.services.PassphraseService
 import com.veleda.cyclewise.services.BackupManager
 import com.veleda.cyclewise.services.PassphraseServiceAndroid
 import com.veleda.cyclewise.androidData.local.database.PeriodDatabase
-import com.veleda.cyclewise.androidData.local.database.rekeyRaw
 import com.veleda.cyclewise.androidData.repository.RoomPeriodRepository
 import com.veleda.cyclewise.domain.insights.InsightEngine
 import com.veleda.cyclewise.domain.insights.generators.CycleLengthAverageGenerator
@@ -84,8 +83,9 @@ val SESSION_SCOPE: Qualifier = named("UnlockedSessionScope")
  * ## Background
  *
  * Before the `key.copyOf()` fix (commit `0a9406c`), [createDatabaseAndZeroizeKey] passed the
- * Argon2-derived key **by reference** to [SupportFactory], then immediately zeroized it. Because
- * [SupportFactory] stores the reference (not a copy), SQLCipher read an all-zeros array when the
+ * Argon2-derived key **by reference** to the SQLCipher open-helper factory (then
+ * `SupportFactory`, today `SupportOpenHelperFactory` — both store the reference, not a
+ * copy), then immediately zeroized it. SQLCipher therefore read an all-zeros array when the
  * database was actually opened. This means **all databases created before the fix are encrypted
  * with a 32-byte zero key, regardless of the user's passphrase.**
  *
@@ -111,17 +111,19 @@ internal fun migrateLegacyZeroKeyIfNeeded(context: Context, correctKey: ByteArra
 
     val zeroKey = ByteArray(32)
     try {
-        net.sqlcipher.database.SQLiteDatabase.loadLibs(context)
-        val db = net.sqlcipher.database.SQLiteDatabase.openDatabase(
+        System.loadLibrary("sqlcipher")
+        val db = net.zetetic.database.sqlcipher.SQLiteDatabase.openDatabase(
             dbFile.absolutePath,
             zeroKey,
             null,   // cursor factory
-            net.sqlcipher.database.SQLiteDatabase.OPEN_READWRITE,
-            null,   // hook
+            net.zetetic.database.sqlcipher.SQLiteDatabase.OPEN_READWRITE,
             null,   // errorHandler
+            null,   // hook
         )
         try {
-            rekeyRaw(db, correctKey)
+            // changePassword(byte[]) routes the raw bytes to sqlite3_rekey(); the array
+            // is retained by reference, so it is zeroized only after db.close() below.
+            db.changePassword(correctKey)
             Log.i("ZeroKeyMigration", "Legacy zero-key database re-encrypted successfully.")
         } finally {
             db.close()
@@ -141,13 +143,14 @@ internal fun migrateLegacyZeroKeyIfNeeded(context: Context, correctKey: ByteArra
  * to transparently re-encrypt any database that was created with the all-zeros-key bug
  * (pre-`copyOf()` fix). See that function's KDoc for details.
  *
- * **Why `copyOf()`?** [PeriodDatabase.create] passes the key to SQLCipher's [SupportFactory],
- * which stores a **reference** (not a copy). `Room.databaseBuilder().build()` returns
- * *without* opening the database. If we zeroed the original key before the database was
- * actually opened, [SupportFactory] would read an all-zeros array and every passphrase
- * would succeed. Passing `key.copyOf()` gives [SupportFactory] its own array so the
- * original can be zeroed immediately. The copy is zeroed by SQLCipher's built-in
- * `clearPassphrase` mechanism when [db.openHelper.writableDatabase] is called later.
+ * **Why `copyOf()`?** [PeriodDatabase.create] passes the key to SQLCipher's
+ * `SupportOpenHelperFactory`, which stores a **reference** (not a copy).
+ * `Room.databaseBuilder().build()` returns *without* opening the database. If we zeroed
+ * the original key before the database was actually opened, the factory would read an
+ * all-zeros array and every passphrase would succeed. Passing `key.copyOf()` gives the
+ * factory its own array so the original can be zeroed immediately. The copy stays live
+ * for the session's database lifetime (the open connection retains it) and is reclaimed
+ * when the session scope closes the database.
  *
  * Uses `try/finally` to guarantee the original key [ByteArray] is filled with zeros even
  * if [PeriodDatabase.create] throws, fulfilling the security contract documented at
@@ -292,7 +295,7 @@ val appModule = module {
          *
          * `createDatabaseAndZeroizeKey` derives the 32-byte AES key, stores its
          * SHA-256 fingerprint in the [KeyFingerprintHolder], passes `key.copyOf()`
-         * to `SupportFactory` (so the factory has its own array), and zeros the
+         * to `SupportOpenHelperFactory` (so the factory has its own array), and zeros the
          * original immediately. See `createDatabaseAndZeroizeKey` KDoc for the full
          * rationale on `copyOf()`.
          *

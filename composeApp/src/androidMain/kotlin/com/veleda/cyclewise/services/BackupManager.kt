@@ -198,14 +198,14 @@ class BackupManager(
                 FileOutputStream(tempDbFile).use { it.write(dbBytes) }
 
                 // Attempt to open with raw SQLCipher
-                net.sqlcipher.database.SQLiteDatabase.loadLibs(context)
-                val rawDb = net.sqlcipher.database.SQLiteDatabase.openDatabase(
+                System.loadLibrary("sqlcipher")
+                val rawDb = net.zetetic.database.sqlcipher.SQLiteDatabase.openDatabase(
                     tempDbFile.absolutePath,
                     key.copyOf(),
-                    null,
-                    net.sqlcipher.database.SQLiteDatabase.OPEN_READONLY,
-                    null,
-                    null,
+                    null,   // cursorFactory
+                    net.zetetic.database.sqlcipher.SQLiteDatabase.OPEN_READONLY,
+                    null,   // errorHandler
+                    null,   // hook
                 )
                 try {
                     // Verify we can actually read data

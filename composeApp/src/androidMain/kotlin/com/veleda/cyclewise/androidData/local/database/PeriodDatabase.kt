@@ -41,7 +41,7 @@ import com.veleda.cyclewise.androidData.local.entities.SymptomLogEntity
 import com.veleda.cyclewise.androidData.local.entities.PeriodLogEntity
 import com.veleda.cyclewise.androidData.local.entities.UserCycleSettingsEntity
 import com.veleda.cyclewise.androidData.local.entities.WaterIntakeEntity
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 /**
  * SQLCipher-encrypted Room database for all user health data.
@@ -107,27 +107,32 @@ abstract class PeriodDatabase : RoomDatabase() {
     abstract fun userCycleSettingsDao(): UserCycleSettingsDao
 
     /**
-     * Re-encrypts the database with a new passphrase-derived key using raw SQLCipher's
-     * native `rekey(byte[])` method.
+     * Re-encrypts the database with a new passphrase-derived key via SQLCipher's
+     * public `changePassword(byte[])`.
      *
      * This method **closes** the Room database first to release the file lock, then opens
      * a raw SQLCipher connection with [oldKey] via the `byte[]` overload of `openDatabase`
      * (which passes the bytes to `sqlite3_key()` — SQLCipher applies PBKDF2 since the key
-     * is 32 bytes and does not match the hex literal format). It then calls `rekey(byte[])`
-     * via reflection (the method is private in SQLCipher 4.5.x but calls `sqlite3_rekey()`
-     * with identical byte-array semantics as `sqlite3_key()`), ensuring PBKDF2 is applied
-     * consistently for both open and rekey operations.
+     * is 32 bytes and does not match the hex literal format). It then calls
+     * `changePassword(byte[])`, which routes the same raw bytes to `sqlite3_rekey()`,
+     * ensuring PBKDF2 is applied consistently for both open and rekey operations.
      *
-     * **Why reflection?** SQLCipher 4.5.4 exposes `changePassword(String)` and
-     * `changePassword(char[])` publicly, but both convert through modified UTF-8 encoding
-     * (`key_mutf8`), which differs from the raw `byte[]` path used by [SupportFactory].
-     * Only the private `native void rekey(byte[])` matches the `native void key(byte[])`
-     * path that [SupportFactory] triggers, guaranteeing the same PBKDF2 derivation.
+     * **History:** the legacy `android-database-sqlcipher` artifact only exposed
+     * `changePassword(String/char[])`, which mutf8-encode the key and derive a
+     * *different* database key than the raw `byte[]` open path — this method used to
+     * reach the private `native rekey(byte[])` via reflection to compensate. The
+     * maintained `sqlcipher-android` artifact makes the raw-byte overload public, so
+     * the reflection hack is gone.
+     *
+     * **Key ownership:** `changePassword(byte[])` retains the passed array **by
+     * reference** inside the open connection's configuration. Both keys are therefore
+     * zeroized only *after* the raw connection is closed — do not reorder the
+     * `finally` blocks below.
      *
      * **Important:** After this method returns, the Room [PeriodDatabase] instance is
      * **closed and stale**. The caller must recreate the session (close the Koin session
      * scope and force re-authentication) so that a fresh [PeriodDatabase] is opened with
-     * the new key via [SupportFactory].
+     * the new key via [SupportOpenHelperFactory].
      *
      * **Security:** Both [oldKey] and [newKey] arrays are zeroized in a `finally` block after
      * the operation completes, regardless of success or failure. The caller should also zeroize
@@ -149,23 +154,23 @@ abstract class PeriodDatabase : RoomDatabase() {
             // Close Room's connection to release the file lock
             close()
 
-            net.sqlcipher.database.SQLiteDatabase.loadLibs(context)
-            val rawDb = net.sqlcipher.database.SQLiteDatabase.openDatabase(
+            System.loadLibrary("sqlcipher")
+            val rawDb = net.zetetic.database.sqlcipher.SQLiteDatabase.openDatabase(
                 dbFile.absolutePath,
                 oldKey,
-                null,
-                net.sqlcipher.database.SQLiteDatabase.OPEN_READWRITE,
-                null,   // hook
+                null,   // cursorFactory
+                net.zetetic.database.sqlcipher.SQLiteDatabase.OPEN_READWRITE,
                 null,   // errorHandler
+                null,   // hook
             )
             try {
-                rekeyRaw(rawDb, newKey)
+                rawDb.changePassword(newKey)
                 // Verify the new key works
                 rawDb.rawQuery("SELECT count(*) FROM sqlite_master", null)
                     .use { it.moveToFirst() }
             } catch (e: Exception) {
                 try {
-                    rekeyRaw(rawDb, oldKey)
+                    rawDb.changePassword(oldKey)
                 } catch (rollback: Exception) {
                     throw RekeyVerificationFailedException(
                         "Rekey failed and rollback also failed",
@@ -197,16 +202,17 @@ abstract class PeriodDatabase : RoomDatabase() {
         /**
          * Creates (or opens) the encrypted database backed by SQLCipher.
          *
-         * ## Security: SupportFactory reference semantics
+         * ## Security: SupportOpenHelperFactory reference semantics
          *
-         * [SupportFactory] stores the [passphrase] array **by reference**, not by copy.
-         * Meanwhile, `Room.databaseBuilder().build()` returns **without** opening the
+         * [SupportOpenHelperFactory] stores the [passphrase] array **by reference**, not
+         * by copy — the same semantics the legacy `SupportFactory` had. Meanwhile,
+         * `Room.databaseBuilder().build()` returns **without** opening the
          * underlying SQLCipher file — the actual file open is deferred until the first
          * DAO query or an explicit call to [openHelper.writableDatabase].
          *
          * This creates a dangerous ordering constraint: if the caller zeros the
          * [passphrase] array between `build()` and the first real database open,
-         * [SupportFactory] will read an all-zeros key and SQLCipher will silently
+         * the factory will read an all-zeros key and SQLCipher will silently
          * encrypt with the wrong key (or open an empty database), making **every**
          * passphrase appear valid.
          *
@@ -216,9 +222,11 @@ abstract class PeriodDatabase : RoomDatabase() {
          * 2. Call `db.openHelper.writableDatabase` **before** zeroing the original
          *    array, which forces SQLCipher to consume the key immediately.
          *
-         * Note: [SupportFactory]'s default `clearPassphrase = true` constructor
-         * parameter causes it to zero **its own** array after
-         * `getWritableDatabase()` succeeds, so the copy is cleaned up automatically.
+         * Unlike the legacy `SupportFactory` (whose default `clearPassphrase = true`
+         * zeroed its own array after the first open), [SupportOpenHelperFactory] keeps
+         * its array untouched for the helper's lifetime — the open connection needs it
+         * (e.g. for `changePassword`). The copy lives exactly as long as the session's
+         * database and is reclaimed with it.
          *
          * @param context    application context for the Room builder.
          * @param passphrase 32-byte AES key derived from the user's passphrase.
@@ -234,7 +242,8 @@ abstract class PeriodDatabase : RoomDatabase() {
             passphrase: ByteArray,
             dbName: String = "cyclewise.db"
         ): PeriodDatabase {
-            val factory = SupportFactory(passphrase)
+            System.loadLibrary("sqlcipher")
+            val factory = SupportOpenHelperFactory(passphrase)
             return Room.databaseBuilder(
                 context,
                 PeriodDatabase::class.java,
@@ -259,34 +268,6 @@ abstract class PeriodDatabase : RoomDatabase() {
                 .build()
         }
     }
-}
-
-/**
- * Calls SQLCipher's private `native void rekey(byte[])` via reflection.
- *
- * This is the only way to pass a raw `byte[]` key to `sqlite3_rekey()` in SQLCipher
- * 4.5.x, which does not expose a public `changePassword(byte[])` method. The public
- * `changePassword(String)` and `changePassword(char[])` use modified UTF-8 encoding
- * (`key_mutf8`), which differs from the raw `byte[]` path used by [SupportFactory]
- * via `key(byte[])`. Using the wrong encoding produces a different derived key, locking
- * the user out on next login.
- *
- * @param db     an open [net.sqlcipher.database.SQLiteDatabase] instance.
- * @param newKey the new 32-byte key to pass to `sqlite3_rekey()`.
- * @throws IllegalStateException if the `rekey(byte[])` method is not found (API change).
- */
-internal fun rekeyRaw(db: net.sqlcipher.database.SQLiteDatabase, newKey: ByteArray) {
-    val rekeyMethod = try {
-        db.javaClass.getDeclaredMethod("rekey", ByteArray::class.java)
-    } catch (e: NoSuchMethodException) {
-        throw IllegalStateException(
-            "SQLCipher API change: private rekey(byte[]) not found. " +
-                "Check SQLCipher version compatibility.",
-            e,
-        )
-    }
-    rekeyMethod.isAccessible = true
-    rekeyMethod.invoke(db, newKey)
 }
 
 /**

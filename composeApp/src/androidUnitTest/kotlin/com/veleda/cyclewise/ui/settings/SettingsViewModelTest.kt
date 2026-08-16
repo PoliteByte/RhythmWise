@@ -777,9 +777,14 @@ class SettingsViewModelTest {
             viewModel.onEvent(SettingsEvent.DeleteAllDataConfirmed)
             advanceUntilIdle()
 
-            // THEN — use case was invoked and DataDeleted effect was emitted
-            coVerify(exactly = 1) { mockDeleteAllDataUseCase() }
+            // THEN — the effect is awaited BEFORE verifying the use case.
+            // The deletion runs inside withContext(Dispatchers.IO), a real thread
+            // pool that advanceUntilIdle() cannot wait for, so there is no
+            // happens-before edge at this point. The emit is sequenced after that
+            // block returns, so awaiting the item is what proves the use case ran.
+            // Verifying first races the IO thread and fails under CI load.
             assertEquals(SettingsEffect.DataDeleted, awaitItem())
+            coVerify(exactly = 1) { mockDeleteAllDataUseCase() }
         }
 
         // THEN — session was closed and confirmation state is reset

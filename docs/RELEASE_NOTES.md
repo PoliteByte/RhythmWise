@@ -1,4 +1,4 @@
-## v1.1.1
+## v1.1.2
 
 **RhythmWise** is a privacy-first menstrual cycle tracker for Android. All of your data stays on your device — encrypted, offline, and fully under your control.
 
@@ -6,12 +6,13 @@
 
 A comprehensive cycle tracking app built with one guiding principle: **your data belongs to you**. There are no accounts, no cloud sync, no analytics, and no internet connection — ever. Your database is encrypted with AES-256-GCM (SQLCipher) behind a passphrase that only you know.
 
-### What's New in 1.1.1
+### What's New in 1.1.2
 
-A small fix-up release. The calendar no longer gets squashed when your phone turns sideways, and RhythmWise is updated to run against the latest Android release.
+A small maintenance release. The encryption library that protects your database is updated to its latest supported version, keeping RhythmWise fully compatible with the newest Android phones. The app also now displays in its intended typeface. Your data, your passphrase, and how you use the app are unchanged.
 
-- **The calendar stays readable**: Turning your phone sideways used to squeeze the calendar until the dates piled on top of each other. RhythmWise now stays upright, so the month view is always readable. On tablets, where there is room for it, the app still rotates freely.
-- **Ready for Android 16**: Updated under the hood to build against the newest Android version. Nothing changes in how you use the app, it just keeps RhythmWise current and eligible for future updates.
+- **Updated encryption library**: SQLCipher, the engine that encrypts everything you track, is now on its current maintained release. Existing databases open exactly as before, and unlocking and changing your passphrase work just like they always have. This also keeps RhythmWise compatible with the new memory layout that the latest Android devices are moving to.
+- **The right font, finally**: A packaging mistake meant RhythmWise has been quietly using the system font instead of its intended typeface, Nunito. That is fixed, so text across the app looks a little rounder and friendlier now. Nothing moves or works differently.
+- **Backup bookkeeping fix**: Backups now record the correct internal database version, so restoring a backup validates properly on every version of the app.
 
 ### Features
 

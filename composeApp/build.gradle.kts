@@ -99,8 +99,8 @@ android {
         applicationId = "com.politebyte.rhythmwise"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 6
-        versionName = "1.1.1"
+        versionCode = 7
+        versionName = "1.1.2"
         testInstrumentationRunner = "com.veleda.cyclewise.CustomTestRunner"
     }
     // This is the standard, safe way to handle duplicate text files

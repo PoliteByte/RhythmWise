@@ -2531,7 +2531,10 @@ without modification.
 8. Add abstract DAO accessor in `PeriodDatabase`
 9. Register the DAO in `AppModule.kt` session scope: `scoped { get<PeriodDatabase>().newModelDao() }`
 10. Add repository methods to `PeriodRepository` interface + `RoomPeriodRepository`
-11. Bump the schema version in `PeriodDatabase`
+11. Bump the schema version in `PeriodDatabase` — **both** the `@Database(version = ...)`
+    annotation **and** the `SCHEMA_VERSION` companion constant. The constant is embedded
+    in backup metadata and gates imports; the two drifted apart once (schema 14, fixed
+    in #167) and stale backups carried the wrong version as a result.
 
 ### New Use Case
 

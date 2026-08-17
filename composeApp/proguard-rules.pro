@@ -68,12 +68,11 @@
 # ----------------------------------------------------------------------------
 # SQLCipher
 # ----------------------------------------------------------------------------
-# Keep ALL members (including private native methods).
-# PeriodDatabase.rekeyRaw() uses reflection to call the private native
-# rekey(byte[]) method for passphrase change and zero-key migration.
-# Narrowing this rule to public members would break encryption key changes.
--keep class net.sqlcipher.** { *; }
--dontwarn net.sqlcipher.**
+# Keep ALL members: SQLCipher registers JNI native methods against exact
+# Java signatures, and R8 renaming or stripping them breaks the native
+# binding at runtime (release-only crashes that debug builds never show).
+-keep class net.zetetic.database.** { *; }
+-dontwarn net.zetetic.database.**
 
 # ----------------------------------------------------------------------------
 # BouncyCastle (Argon2 KDF)

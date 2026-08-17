@@ -1,0 +1,19 @@
+# Binary assets: never text-normalize, never diff as text.
+# The Nunito font files were once committed as corrupted text (issue #168);
+# these rules make that class of accident impossible.
+*.ttf      binary
+*.otf      binary
+*.png      binary
+*.webp     binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.wav      binary
+*.mp3      binary
+*.ogg      binary
+*.jar      binary
+*.aar      binary
+*.keystore binary
+*.jks      binary
+*.apk      binary
+*.aab      binary

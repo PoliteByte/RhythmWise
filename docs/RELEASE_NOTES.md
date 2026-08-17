@@ -8,9 +8,10 @@ A comprehensive cycle tracking app built with one guiding principle: **your data
 
 ### What's New in 1.1.2
 
-A small maintenance release. The encryption library that protects your database is updated to its latest supported version, keeping RhythmWise fully compatible with the newest Android phones. Your data, your passphrase, and how you use the app are unchanged.
+A small maintenance release. The encryption library that protects your database is updated to its latest supported version, keeping RhythmWise fully compatible with the newest Android phones. The app also now displays in its intended typeface. Your data, your passphrase, and how you use the app are unchanged.
 
 - **Updated encryption library**: SQLCipher, the engine that encrypts everything you track, is now on its current maintained release. Existing databases open exactly as before, and unlocking and changing your passphrase work just like they always have. This also keeps RhythmWise compatible with the new memory layout that the latest Android devices are moving to.
+- **The right font, finally**: A packaging mistake meant RhythmWise has been quietly using the system font instead of its intended typeface, Nunito. That is fixed, so text across the app looks a little rounder and friendlier now. Nothing moves or works differently.
 - **Backup bookkeeping fix**: Backups now record the correct internal database version, so restoring a backup validates properly on every version of the app.
 
 ### Features
